@@ -1,0 +1,11 @@
+Problems  
+
+1. sliderInput("aveloading_cross", "Average Cross Loading (CL)": the maximum value sometimes is less than the minimum value 
+  e.g., when # of variable = 8, factor corrlation in the true model = .2, ML = .48, MR = .65, CL = .79, CR = 0
+
+  Suggested change 
+    output$slidemax_cross <- renderUI({
+      sliderInput("aveloading_cross", "Average Cross Loading (CL)", min = 0, 
+                  max = max(round((sqrt(1-(input$aveloading)^2+(input$fcor*input$aveloading)^2)-input$fcor*input$aveloading),2),0), 
+                  value = 0) 
+    })

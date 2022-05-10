@@ -93,21 +93,22 @@ server <- function(input, output) {
 	
   output$slidemax_cross <- renderUI({
     sliderInput("aveloading_cross", "Average Cross Loading (CL)", min = 0, 
-                max = sqrt(1-(input$aveloading)^2+(input$fcor*input$aveloading)^2)-input$fcor*input$aveloading, 
+                max = round((sqrt(1-(input$aveloading)^2+(input$fcor*input$aveloading)^2)-input$fcor*input$aveloading),2), 
                 value = .2) 
   })
   
   #for randomly generated factor loadings:
 	output$sliderange <- renderUI({
-		sliderInput("range", "Main Loadings Range (MR)", min = 0, max = min(2*input$aveloading, 2*(1-input$aveloading)), 
-		            value = min(.1,input$aveloading, (1-input$aveloading))) 
+		sliderInput("range", "Main Loadings Range (MR)", min = 0, max = round((min(2*input$aveloading, 2*(1-input$aveloading))),2), 
+		            value = min(.1,input$aveloading, (1-input$aveloading)), step = 0.01) 
 	})
 	
 	#for randomly generated factor cross-loadings:
 	output$sliderange_cross <- renderUI({
-	  sliderInput("range_cross", "Cross-Loadings Range (CR)", min = 0, max = min(1,2*input$aveloading_cross, 
-	  2*(sqrt(1-(input$aveloading)^2+(input$fcor*input$aveloading)^2)-input$fcor*input$aveloading-input$aveloading_cross)), 
-	  value = min(0,input$slidermax_cross, (1-input$slidermax_cross))) 
+	  sliderInput("range_cross", "Cross-Loadings Range (CR)", min = 0, max = round(min(1,2*input$aveloading_cross, 
+	  2*(sqrt(1-(input$aveloading)^2+(input$fcor*input$aveloading)^2)-input$fcor*input$aveloading-input$aveloading_cross)),2), 
+	  
+	  value = min(0,input$slidermax_cross, (1-input$slidermax_cross)),step = 0.01) 
 	})
 	
 	#for user defined factor loadings: 
