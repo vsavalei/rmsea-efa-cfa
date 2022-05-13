@@ -14,6 +14,7 @@ Solution: give ggplot some minimum y-axis range to plot? I think the minimum ran
 horizontal lines: so it should be a bit above .08 for RMSEA and SRMR, and a bit below .9 (or .95) for CFI.  
 
 [FIXED] 2. The limit on CL and CR should show rounded to two decimal places in the sliders.
+2.1 Solve the overlapping anchor 
 
 3. Hovering does not yet work (see Break Alpha app) 
 

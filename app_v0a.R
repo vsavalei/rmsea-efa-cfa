@@ -7,23 +7,53 @@ source("functions_app.R")
 # UI code
 
 # for adjusting the overlapping anchors on the slider 
-js <- paste("function doesOverlap() {",
-            "   var $lastLabel = $('#sliderange .irs-grid-text:last');",
+# js <- paste("function MRdoesOverlap() {",
+#             "   var $lastLabel = $('#sliderange .irs-grid-text:last');", # MR 
+#             "   var $prevLastLabel = $lastLabel.prevAll('.irs-grid-text').first();",
+#             "   return $lastLabel.offset().left < $prevLastLabel.offset().left + $prevLastLabel.width();",
+#             "}\n",
+#             "Shiny.addCustomMessageHandler('regrid', function(force) {",
+#             "   if (MRdoesOverlap() | force) {",
+#             "      console.log('Overlap detected - adjusting tick number');",
+#             "      var $sld = $('#range').data('ionRangeSlider');", #range is the input name 
+#             "      var ticks_n = $sld.options.grid_num;",
+#             "      $sld.update({grid_num: Math.round(ticks_n)});",
+#             "   }",
+#             "});",
+#             "function CLdoesOverlap() {",
+#             "   var $lastLabel = $('#slidemax_cross .irs-grid-text:last');", # CL
+#             "   var $prevLastLabel = $lastLabel.prevAll('.irs-grid-text').first();",
+#             "   return $lastLabel.offset().left < $prevLastLabel.offset().left + $prevLastLabel.width();",
+#             "}\n",
+#             "Shiny.addCustomMessageHandler('regrid', function(force) {",
+#             "   if (CLdoesOverlap() | force) {",
+#             "      console.log('Overlap detected - adjusting tick number');",
+#             "      var $sld = $('#aveloading_cross').data('ionRangeSlider');", #range is the input name
+#             "      var ticks_n = $sld.options.grid_num;",
+#             "      $sld.update({grid_num: Math.round(ticks_n)});",
+#             "   }",
+#             "});",
+#             sep = "\n")
+
+js1 <- paste("function MRdoesOverlap() {",
+            "   var $lastLabel = $('#sliderange .irs-grid-text:last');", # MR 
             "   var $prevLastLabel = $lastLabel.prevAll('.irs-grid-text').first();",
             "   return $lastLabel.offset().left < $prevLastLabel.offset().left + $prevLastLabel.width();",
             "}\n",
             "Shiny.addCustomMessageHandler('regrid', function(force) {",
-            "   if (doesOverlap() | force) {",
+            "   if (MRdoesOverlap() | force) {",
             "      console.log('Overlap detected - adjusting tick number');",
-            "      var $sld = $('#range').data('ionRangeSlider');",
+            "      var $sld = $('#range').data('ionRangeSlider');", #range is the input name 
             "      var ticks_n = $sld.options.grid_num;",
             "      $sld.update({grid_num: Math.round(ticks_n)});",
             "   }",
-            "});", sep = "\n")
+            "});",sep = "\n")
+
+
 
 ui <- fluidPage(
-  tags$head(tags$script(HTML(js), type = "text/javascript")), #corrsponds js (for adjusting the overlapping anchors )
-            
+  tags$head(tags$script(HTML(js1), type = "text/javascript")), #corrsponds js (for adjusting the overlapping anchors )
+  
 	h1("SEM Fit Indices' Sensitivity to cross-loadings"),
 	h4("How sensitive are RMSEA, CFI, and SRMR to omitted cross-loadings? This app will generate population covariance matrices 
 	from CFA models with 2 or 3 factors and with a varying number of crossloadings. The app will then fit the CFA model 
@@ -51,10 +81,9 @@ ui <- fluidPage(
 				 variances for negative values. Plots will be omitted for all such configurations.",  
 				br(),br(),
 				sliderInput("aveloading", "Average Main Loading (ML)", min=0, max=1,value=.7),
-				uiOutput("sliderange"), 
-				uiOutput("slidemax_cross"),
-				#sliderInput("aveloading_cross", "Average Cross-Loading (CL)", min=0, max=1,value=.2),
-				uiOutput("sliderange_cross"),
+				uiOutput("sliderange"), #MR
+				uiOutput("slidemax_cross"), #CL
+				uiOutput("sliderange_cross"), #CR
 				actionButton("updateButton", "Compute fit index values!")
 				),
 			
@@ -188,24 +217,32 @@ server <- function(input, output, session) {
 	  })
 	  
 	  output$plot1 <- renderPlotly({
-	    pt <- ggplot(data=results)+ #,
-	                 # aes(text = paste0("RMSEA = " #,sprintf('%.3f', rmsea_same_f),"<br>converged = "
-	                 # )))+ 
-	      geom_line(data=results,mapping = aes(x=number_crossloadings, y=rmsea_same_f,color="To 1st factor, then 2d"),size=1)+ 
-	      geom_line(data=results,mapping = aes(x=number_crossloadings, y=rmsea_dif_f,color="To alternating factors"),size=1)+ 
+	    pt <- ggplot(data=results,aes(x=number_crossloadings))+ 
+	      geom_line(data=results,aes(y=rmsea_same_f,
+	                                 color="To 1st factor, then 2d",
+	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
+	                                              "<br>RMSEA: ", sprintf('%.3f', rmsea_same_f))),group=1)+ 
+	      geom_line(data=results,aes(y=rmsea_dif_f,color="To alternating factors",
+	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
+	                                                                                                      "<br>RMSEA: ", sprintf('%.3f', rmsea_dif_f))),group=1)+ 
 	      geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "How crossloadings are added") +
 	      xlab("Number of crossloadings in the true model")+
 	      ylab("RMSEA for the model with no crossloadings")
 	    
-	    pt <- ggplotly(pt,tooltip = c("text"))
+	    pt <- ggplotly(pt, tooltip = "text")
 	  })
 	  
 	  output$plot2 <- renderPlotly({
-	    pt <- ggplot(data=results, 
-	                 aes(text = paste0("CFI = " #,sprintf('%.3f', cfi_same_f),"<br>converged = "
-	                 )))+ 
-	      geom_line(data=results,mapping = aes(x=number_crossloadings, y=cfi_same_f,color="To 1st factor, then 2d"),size=1)+ 
-	      geom_line(data=results,mapping = aes(x=number_crossloadings, y=cfi_dif_f,color="To alternating factors"),size=1)+ 
+	    pt <- ggplot(data=results, aes(x=number_crossloadings))+ 
+	      geom_line(data=results,
+	                aes(y=cfi_same_f,
+	                    color="To 1st factor, then 2d",
+	                    text = paste0("# of cross Loadings: ", number_crossloadings,
+	                                  "<br>CFI: ", sprintf('%.3f', cfi_same_f))),group=1)+ 
+	      geom_line(data=results,aes(y=cfi_dif_f,
+	                                 color="To alternating factors",
+	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
+	                                               "<br>CFI: ", sprintf('%.3f', cfi_dif_f))),group=1)+ 
 	      geom_abline(color="grey",slope=0, intercept=0.90) + labs(color = "How crossloadings are added") +
 	      xlab("Number of crossloadings in the true model")+
 	      ylab("CFI for the model with no crossloadings")
@@ -213,11 +250,13 @@ server <- function(input, output, session) {
 	  })
 	  
 	  output$plot3 <- renderPlotly({
-	    pt <- ggplot(data=results, 
-	                 aes(text = paste0("SRMR = " #,sprintf('%.3f', srmr_same_f),"<br>converged = "
-	                 )))+ 
-	      geom_line(data=results,mapping = aes(x=number_crossloadings, y=srmr_same_f,color="To 1st factor, then 2d"),size=1)+ 
-	      geom_line(data=results,mapping = aes(x=number_crossloadings, y=srmr_dif_f,color="To alternating factors"),size=1)+ 
+	    pt <- ggplot(data=results, aes(x=number_crossloadings))+ 
+	      geom_line(data=results,aes(y=srmr_same_f,color="To 1st factor, then 2d",
+	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
+	                                               "<br>SRMR: ", sprintf('%.3f', srmr_same_f))),group=1)+ 
+	      geom_line(data=results,aes(y=srmr_dif_f,color="To alternating factors",
+	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
+	                                               "<br>SRMR: ", sprintf('%.3f', srmr_dif_f))),group=1)+ 
 	      geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "How crossloadings are added") +
 	      xlab("Number of crossloadings in the true model")+
 	      ylab("SRMR for the model with no crossloadings")
