@@ -7,34 +7,6 @@ source("functions_app.R")
 # UI code
 
 # for adjusting the overlapping anchors on the slider 
-# js <- paste("function MRdoesOverlap() {",
-#             "   var $lastLabel = $('#sliderange .irs-grid-text:last');", # MR 
-#             "   var $prevLastLabel = $lastLabel.prevAll('.irs-grid-text').first();",
-#             "   return $lastLabel.offset().left < $prevLastLabel.offset().left + $prevLastLabel.width();",
-#             "}\n",
-#             "Shiny.addCustomMessageHandler('regrid', function(force) {",
-#             "   if (MRdoesOverlap() | force) {",
-#             "      console.log('Overlap detected - adjusting tick number');",
-#             "      var $sld = $('#range').data('ionRangeSlider');", #range is the input name 
-#             "      var ticks_n = $sld.options.grid_num;",
-#             "      $sld.update({grid_num: Math.round(ticks_n)});",
-#             "   }",
-#             "});",
-#             "function CLdoesOverlap() {",
-#             "   var $lastLabel = $('#slidemax_cross .irs-grid-text:last');", # CL
-#             "   var $prevLastLabel = $lastLabel.prevAll('.irs-grid-text').first();",
-#             "   return $lastLabel.offset().left < $prevLastLabel.offset().left + $prevLastLabel.width();",
-#             "}\n",
-#             "Shiny.addCustomMessageHandler('regrid', function(force) {",
-#             "   if (CLdoesOverlap() | force) {",
-#             "      console.log('Overlap detected - adjusting tick number');",
-#             "      var $sld = $('#aveloading_cross').data('ionRangeSlider');", #range is the input name
-#             "      var ticks_n = $sld.options.grid_num;",
-#             "      $sld.update({grid_num: Math.round(ticks_n)});",
-#             "   }",
-#             "});",
-#             sep = "\n")
-
 js1 <- paste("function MRdoesOverlap() {",
             "   var $lastLabel = $('#sliderange .irs-grid-text:last');", # MR 
             "   var $prevLastLabel = $lastLabel.prevAll('.irs-grid-text').first();",
@@ -98,8 +70,8 @@ ui <- fluidPage(
 			conditionalPanel(
 				condition = "input.custom == 'rand'", 
 				h4(textOutput("printload")),h4(textOutput("printload_cross")),
-				h4(textOutput("printres")),h4(textOutput("printres2")),h4(textOutput("plottext")), plotlyOutput("plot1"),
-				plotlyOutput("plot2"),plotlyOutput("plot3")
+				h4(textOutput("printres")),h4(textOutput("printres2")),h4(textOutput("plottext")), 
+				plotlyOutput("plots")
 				),
 			
 		conditionalPanel(
@@ -216,8 +188,9 @@ server <- function(input, output, session) {
 	          You can hover over the curve to get specific fit index values.", sep="") 
 	  })
 	  
-	  output$plot1 <- renderPlotly({
-	    pt <- ggplot(data=results,aes(x=number_crossloadings))+ 
+	  
+	  output$plots <- renderPlotly({
+	  plot1 <- ggplot(data=results,aes(x=number_crossloadings))+ 
 	      geom_line(data=results,aes(y=rmsea_same_f,
 	                                 color="To 1st factor, then 2d",
 	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
@@ -225,15 +198,12 @@ server <- function(input, output, session) {
 	      geom_line(data=results,aes(y=rmsea_dif_f,color="To alternating factors",
 	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
 	                                                                                                      "<br>RMSEA: ", sprintf('%.3f', rmsea_dif_f))),group=1)+ 
-	      geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "How crossloadings are added") +
+	      geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "How crossloadings are added", title = "RMSEA") +
 	      xlab("Number of crossloadings in the true model")+
 	      ylab("RMSEA for the model with no crossloadings")
-	    
-	    pt <- ggplotly(pt, tooltip = "text")
-	  })
+	  p1 <- ggplotly(plot1,tooltip = c("text")) 
 	  
-	  output$plot2 <- renderPlotly({
-	    pt <- ggplot(data=results, aes(x=number_crossloadings))+ 
+	  plot2 <- ggplot(data=results, aes(x=number_crossloadings))+ 
 	      geom_line(data=results,
 	                aes(y=cfi_same_f,
 	                    color="To 1st factor, then 2d",
@@ -243,27 +213,31 @@ server <- function(input, output, session) {
 	                                 color="To alternating factors",
 	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
 	                                               "<br>CFI: ", sprintf('%.3f', cfi_dif_f))),group=1)+ 
-	      geom_abline(color="grey",slope=0, intercept=0.90) + labs(color = "How crossloadings are added") +
+	      geom_abline(color="grey",slope=0, intercept=0.90) + labs(color = "How crossloadings are added",title = "CFI") +
 	      xlab("Number of crossloadings in the true model")+
 	      ylab("CFI for the model with no crossloadings")
-	    pt <- ggplotly(pt,tooltip = c("text"))
-	  })
-	  
-	  output$plot3 <- renderPlotly({
-	    pt <- ggplot(data=results, aes(x=number_crossloadings))+ 
+	  p2 <- ggplotly(plot2,tooltip = c("text"))
+
+	  plot3 <- ggplot(data=results, aes(x=number_crossloadings))+ 
 	      geom_line(data=results,aes(y=srmr_same_f,color="To 1st factor, then 2d",
 	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
 	                                               "<br>SRMR: ", sprintf('%.3f', srmr_same_f))),group=1)+ 
 	      geom_line(data=results,aes(y=srmr_dif_f,color="To alternating factors",
 	                                 text = paste0("# of cross Loadings: ", number_crossloadings,
 	                                               "<br>SRMR: ", sprintf('%.3f', srmr_dif_f))),group=1)+ 
-	      geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "How crossloadings are added") +
+	      geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "How crossloadings are added",title = "SRMR") +
 	      xlab("Number of crossloadings in the true model")+
 	      ylab("SRMR for the model with no crossloadings")
-	    pt <- ggplotly(pt,tooltip = c("text"))
+	  p3 <- ggplotly(plot3,tooltip = c("text"))
+	  
+	  
+	subplot(
+	    style(p1, showlegend = T),
+	    style(p2, showlegend = FALSE),
+	    style(p3, showlegend = F),
+	    nrows = 1
+	  )
 	  })
-	  
-	  
 	  
 	}) # observeEvent(input$updateButton
 
