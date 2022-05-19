@@ -1,6 +1,6 @@
 FEATURES TO ADD OR BUGS TO FIX:
 
-1. (3/28/2022) When all crossloadings are zero, sometimes R's way of printing zero is a very small number instead, 
+[FIXED] 1. (3/28/2022) When all crossloadings are zero, sometimes R's way of printing zero is a very small number instead, 
 but ggplot adjusts the y-axis in the graph manually, creating what looks like huge differences on first glance. Try this:
 p=10
 fcor=.2
@@ -26,10 +26,11 @@ horizontal lines: so it should be a bit above .08 for RMSEA and SRMR, and a bit 
 the main loading times the crossloading" with a math expression. Advanced: Any way to print the values of added loadings under
 the graphs on the x-axis? Too fancy? 
 
-7. Try different positioning of plots so that all three are visible right away, if possible. 
+[Semi-FIXED] 7. Try different positioning of plots so that all three are visible right away, if possible. 
 They are too big and definitely too wide. Plots for RMSEA and SRMR could appear side by side. CFI could be below it. 
 OR maybe all three can be in one row, just small. Especially if hovering works, this may be sufficient. 
+7.1 Fix the legend 
 
-8. Plots are ugly. Lines should be thinner, dots should show actual data (see Bill's FMI app).
+[FIXED] 8. Plots are ugly. Lines should be thinner, dots should show actual data (see Bill's FMI app).
 
 9. Eventually, add the feature where the fitted model holds the factors to be orthogonal (I need to modify code here in the functions.R)
