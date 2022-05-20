@@ -154,10 +154,13 @@ server <- function(input, output, session) {
     loadtxt_cross <- "The randomly generated values of crossloadings to be added to the true model, one by one, are " 
     genLoadingss_cross <- runif(input$p, min=input$aveloading_cross-.5*input$range_cross, max=input$aveloading_cross+.5*input$range_cross)
     
-    residualstxt <- "When these loadings are added first to one factor, then to the next, the residual variances in the final 
-	  model with all the cross-loadings added are 
-	  (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice 
-	  the factor correlation times the main loading times the crossloading)  " 
+    residualstxt <- HTML(paste0("<p>", "Use this formula: $$\\hat{A}_{\\small{\\textrm{M€}}} =", mean(genLoadingss_cross),"$$","</p>"))
+    
+    # $$ 1 - ML^2 - CL^2 - 2 \times FactorCorrelation \times ML \times CL$$
+    
+#     residualstxt <- paste0("When these loadings are added first to one factor, then to the next, the residual variances in the final 
+# 	  model with all the cross-loadings added are (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice 
+# 	  the factor correlation times the main loading times the crossloading)  " )
     genResiduals <- 1-genLoadingss^2-genLoadingss_cross^2-2*genLoadingss*genLoadingss_cross*input$fcor 
     
     residualstxt2 <- "When these loadings are added to alternating factors, the residual variances in the final 
@@ -210,7 +213,7 @@ server <- function(input, output, session) {
         ylab("RMSEA for the model with no crossloadings")+
         ylim(NA,upperbound_rmsea)
       
-      p1 <- ggplotly(plot1,tooltip = c("text")) 
+      p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
       
       plot2 <- ggplot(data=results, aes(x=number_crossloadings))+ 
         geom_line(aes(y=cfi_same_f,
@@ -229,7 +232,7 @@ server <- function(input, output, session) {
         xlab("Number of crossloadings in the true model")+
         ylab("CFI for the model with no crossloadings")+
         ylim(lowerbound_cfi,NA)
-      p2 <- ggplotly(plot2,tooltip = c("text"))
+      p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
       
       plot3 <- ggplot(data=results, aes(x=number_crossloadings))+ 
         geom_line(aes(y=srmr_same_f,
