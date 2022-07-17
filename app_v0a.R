@@ -34,16 +34,8 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      sliderInput("p", "Number of variables:", min=4, max=50, step=2, value=8), 
       
-      sliderInput("fcor", "Factor correlation in the true model:", min=0, max=1, value=.2), 
-      
-      radioButtons("custom", "How do you want to define the factor loadings in the true model?", 
-                   c("Generate randomly"="rand","Specify manually"="spec")),
-      
-      conditionalPanel(
-        condition = "input.custom == 'rand'",
-        "Factor loadings are drawn from uniform distributions on [a,b] with mean L=(a+b)/2 and range R=(b-a). 
+      "Factor loadings are drawn from uniform distributions on [a,b] with mean L=(a+b)/2 and range R=(b-a). 
 				 The user can set ranges (MR and CR) to zero to specify constant main loadings and constant cross-loadings. 
 				 Variables' variances are assumed to be 1. For this reason, 
 				 the maximum possible value of a crossloading is determined by the corresponding value of the main loading and the factor correlation. 
@@ -51,7 +43,17 @@ ui <- fluidPage(
 				 an attempt to minimize impossible configurations (with negative error variances). However, 
 				 impossible configurations can still be generated unless both MR and CR are set to zero. Check the printed residual 
 				 variances for negative values. Plots will be omitted for all such configurations.",  
-        br(),br(),
+      br(),br(), 
+      
+      radioButtons("custom", "I would like to examine a ", 
+                   c("Two factor model"="2factor","Three factor model"="3factor")),
+      
+      
+      conditionalPanel(
+        condition = "input.custom == '2factor'",
+        sliderInput("p", "Number of variables:", min=4, max=50, step=2, value=8), 
+        
+        sliderInput("fcor", "Factor correlation in the true model:", min=0, max=1, value=.2), 
         sliderInput("aveloading", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange"), #MR
         uiOutput("slidemax_cross"), #CL
@@ -68,7 +70,7 @@ ui <- fluidPage(
     
     mainPanel(  
       conditionalPanel(
-        condition = "input.custom == 'rand'", 
+        condition = "input.custom == '2factor'", 
         h4(textOutput("printload")),h4(textOutput("printload_cross")),
         h4(textOutput("printres")),h4(textOutput("printres2")),h4(textOutput("plottext")), 
         plotlyOutput("plots")
@@ -154,13 +156,13 @@ server <- function(input, output, session) {
     loadtxt_cross <- "The randomly generated values of crossloadings to be added to the true model, one by one, are " 
     genLoadingss_cross <- runif(input$p, min=input$aveloading_cross-.5*input$range_cross, max=input$aveloading_cross+.5*input$range_cross)
     
-    residualstxt <- HTML(paste0("<p>", "Use this formula: $$\\hat{A}_{\\small{\\textrm{M€}}} =", mean(genLoadingss_cross),"$$","</p>"))
+    #residualstxt <- HTML(paste0("<p>", "Use this formula: $$\\hat{A}_{\\small{\\textrm{M€}}} =", mean(genLoadingss_cross),"$$","</p>"))
     
     # $$ 1 - ML^2 - CL^2 - 2 \times FactorCorrelation \times ML \times CL$$
     
-#     residualstxt <- paste0("When these loadings are added first to one factor, then to the next, the residual variances in the final 
-# 	  model with all the cross-loadings added are (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice 
-# 	  the factor correlation times the main loading times the crossloading)  " )
+    residualstxt <- paste0("When these loadings are added first to one factor, then to the next, the residual variances in the final
+	  model with all the cross-loadings added are (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice
+	  the factor correlation times the main loading times the crossloading)  " )
     genResiduals <- 1-genLoadingss^2-genLoadingss_cross^2-2*genLoadingss*genLoadingss_cross*input$fcor 
     
     residualstxt2 <- "When these loadings are added to alternating factors, the residual variances in the final 
