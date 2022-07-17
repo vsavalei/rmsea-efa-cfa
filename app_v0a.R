@@ -8,7 +8,7 @@ source("functions_app.R")
 
 # for adjusting the overlapping anchors on the slider 
 js1 <- paste("function MRdoesOverlap() {",
-             "   var $lastLabel = $('#sliderange .irs-grid-text:last');", # MR 
+             "   var $lastLabel = $('#sliderange2 .irs-grid-text:last');", # MR 
              "   var $prevLastLabel = $lastLabel.prevAll('.irs-grid-text').first();",
              "   return $lastLabel.offset().left < $prevLastLabel.offset().left + $prevLastLabel.width();",
              "}\n",
@@ -51,21 +51,35 @@ ui <- fluidPage(
       
       conditionalPanel(
         condition = "input.custom == '2factor'",
-        sliderInput("p", "Number of variables:", min=4, max=50, step=2, value=8), 
+        sliderInput("p2", "Total number of variables:", min=4, max=50, step=2, value=8), 
         
-        sliderInput("fcor", "Factor correlation in the true model:", min=0, max=1, value=.2), 
-        sliderInput("aveloading", "Average Main Loading (ML)", min=0, max=1,value=.7),
-        uiOutput("sliderange"), #MR
-        uiOutput("slidemax_cross"), #CL
-        uiOutput("sliderange_cross"), #CR
-        actionButton("updateButton", "Compute fit index values!")
+        sliderInput("fcor2", "Factor correlation in the true model:", min=0, max=1, value=.2), 
+        sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
+        uiOutput("sliderange2"), #MR
+        uiOutput("slidemax_cross2"), #CL
+        uiOutput("sliderange_cross2"), #CR
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.custom == '3factor'",
+        sliderInput("p3", "Total number of variables:", min=6, max=51, step=3, value=9), 
+        
+        sliderInput("fcor3", "Factor correlation in the true model:", min=0, max=1, value=.2), 
+        sliderInput("aveloading3", "Average Main Loading (ML)", min=0, max=1,value=.7),
+        uiOutput("sliderange3"), #MR
+        uiOutput("slidemax_cross3"), #CL
+        uiOutput("sliderange_cross3"), #CR
+        
       ),
       
       conditionalPanel(
         condition = "input.custom == 'spec'",
         strong("Specify the main factor loading for each variable:"),br(),
         uiOutput("slideload"),actionButton("updateButtonSpec", "Plot!!")
-      )
+      ),
+      
+      actionButton("updateButton", "Compute fit index values!")
     ),
     
     mainPanel(  
@@ -112,38 +126,61 @@ server <- function(input, output, session) {
   # nsdl = 3 #mumber of sign digits
   # pm = 10 #cutoff for p to stop displaying some output to prevent clutter  
   
-  #define input sliders   
+  #define input sliders for TWO factor model
   
-  output$slidemax_cross <- renderUI({
-    sliderInput("aveloading_cross", "Average Cross Loading (CL)", min = 0, 
-                max = round((sqrt(1-(input$aveloading)^2+(input$fcor*input$aveloading)^2)-input$fcor*input$aveloading),2), 
+  output$slidemax_cross2 <- renderUI({
+    sliderInput("aveloading_cross2", "Average Cross Loading (CL)", min = 0, 
+                max = round((sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2),2), 
                 round = -2, step = 0.01, value = .2) 
   })
   
   #for randomly generated factor loadings:
-  output$sliderange <- renderUI({
-    sliderInput("range", "Main Loadings Range (MR)", min = 0, max = round((min(2*input$aveloading, 2*(1-input$aveloading))),2), 
-                value = min(.1,input$aveloading, (1-input$aveloading)), round = -3, step = 0.01) 
+  output$sliderange2 <- renderUI({
+    sliderInput("range2", "Main Loadings Range (MR)", min = 0, max = round((min(2*input$aveloading2, 2*(1-input$aveloading2))),2), 
+                value = min(.1,input$aveloading2, (1-input$aveloading2)), round = -3, step = 0.01) 
   })
   
   #for randomly generated factor cross-loadings:
-  output$sliderange_cross <- renderUI({
-    sliderInput("range_cross", "Cross-Loadings Range (CR)", min = 0, max = round(min(1,2*input$aveloading_cross, 
-                                                                                     2*(sqrt(1-(input$aveloading)^2+(input$fcor*input$aveloading)^2)-input$fcor*input$aveloading-input$aveloading_cross)),2), 
-                
-                value = min(0,input$slidermax_cross, (1-input$slidermax_cross)), round = -2, step = 0.01) 
+  output$sliderange_cross2 <- renderUI({
+    sliderInput("range_cross2", "Cross-Loadings Range (CR)", 
+                min = 0, 
+                max = round(min(1,2*input$aveloading_cross2,  
+                                2*(sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2-input$aveloading_cross2)),2), 
+                value = min(0,input$input$aveloading_cross2, (1-input$input$aveloading_cross2)), round = -2, step = 0.01) 
   })
   
-  #for user defined factor loadings: 
-  numP <- reactive({input$p})  # get number of loadings from ui slider 
-  
-  output$slideload <- renderUI({   # create custom loading sliders
-    lapply(1:(numP()), function(i) {
-      sliderInput(inputId = paste0("load", i), # this creates input$load1, input$load2, etc.
-                  label = paste0("Loading ", i),
-                  min = 0, max = 1, value = .5)
-    })
+  #define input sliders for THREE factor model
+  output$slidemax_cross3 <- renderUI({
+    sliderInput("aveloading_cross3", "Average Cross Loading (CL)", min = 0, 
+                max = round((sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)-input$fcor3*input$aveloading3),2), 
+                round = -2, step = 0.01, value = .2) 
   })
+  
+  #for randomly generated factor loadings:
+  output$sliderange3 <- renderUI({
+    sliderInput("range3", "Main Loadings Range (MR)", min = 0, max = round((min(2*input$aveloading3, 2*(1-input$aveloading3))),2), 
+                value = min(.1,input$aveloading3, (1-input$aveloading3)), round = -3, step = 0.01) 
+  })
+  
+  #for randomly generated factor cross-loadings:
+  output$sliderange_cross3 <- renderUI({
+    sliderInput("range_cross3", "Cross-Loadings Range (CR)", 
+                min = 0, 
+                max = round(min(1,2*input$aveloading_cross3,  
+                                2*(sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)-input$fcor3*input$aveloading3-input$aveloading_cross3)),2), 
+                value = min(0,input$input$aveloading_cross3, (1-input$input$aveloading_cross3)), round = -2, step = 0.01) 
+  })
+  
+  # #for user defined factor loadings: 
+  # numP <- reactive({input$p2})  # get number of loadings from ui slider 
+  # 
+  # output$slideload <- renderUI({   # create custom loading sliders
+  #   lapply(1:(numP()), function(i) {
+  #     sliderInput(inputId = paste0("load", i), # this creates input$load1, input$load2, etc.
+  #                 label = paste0("Loading ", i),
+  #                 min = 0, max = 1, value = .5)
+  #   })
+  # })
   
   # button pressed to update randomly generated loadings
   # code needed
@@ -151,41 +188,41 @@ server <- function(input, output, session) {
   observeEvent(input$updateButton,{      
     
     loadtxt <- "The true model is a 2-factor model with the randomly generated main loadings of " 
-    genLoadingss <- runif(input$p, min=input$aveloading-.5*input$range, max=input$aveloading+.5*input$range)
+    genLoadingss <- runif(input$p2, min=input$aveloading2-.5*input$range2, max=input$aveloading2+.5*input$range2)
     
     loadtxt_cross <- "The randomly generated values of crossloadings to be added to the true model, one by one, are " 
-    genLoadingss_cross <- runif(input$p, min=input$aveloading_cross-.5*input$range_cross, max=input$aveloading_cross+.5*input$range_cross)
+    genLoadingss_cross <- runif(input$p2, min=input$aveloading_cross2 -.5*input$range_cross2, max=input$aveloading_cross2+.5*input$range_cross2)
     
     #residualstxt <- HTML(paste0("<p>", "Use this formula: $$\\hat{A}_{\\small{\\textrm{M€}}} =", mean(genLoadingss_cross),"$$","</p>"))
     
     # $$ 1 - ML^2 - CL^2 - 2 \times FactorCorrelation \times ML \times CL$$
     
-    residualstxt <- paste0("When these loadings are added first to one factor, then to the next, the residual variances in the final
+    residualstxt_seq <- paste0("When these loadings are added first to one factor, then to the next, the residual variances in the final
 	  model with all the cross-loadings added are (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice
 	  the factor correlation times the main loading times the crossloading)  " )
-    genResiduals <- 1-genLoadingss^2-genLoadingss_cross^2-2*genLoadingss*genLoadingss_cross*input$fcor 
+    genResiduals <- 1-genLoadingss^2-genLoadingss_cross^2-2*genLoadingss*genLoadingss_cross*input$fcor2 
     
-    residualstxt2 <- "When these loadings are added to alternating factors, the residual variances in the final 
+    residualstxt_alter <- "When these loadings are added to alternating factors, the residual variances in the final 
 	  model with all the cross-loadings added are 
 	  (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice 
 	  the factor correlation times the main loading times the crossloading)  " 
     genLoadingss_cross_reordered<- c(genLoadingss_cross[c(TRUE, FALSE)], genLoadingss_cross[c(TRUE, FALSE)])
-    genResiduals2 <- 1-genLoadingss^2-genLoadingss_cross_reordered^2-2*genLoadingss*genLoadingss_cross_reordered*input$fcor 
+    genResiduals2 <- 1-genLoadingss^2-genLoadingss_cross_reordered^2-2*genLoadingss*genLoadingss_cross_reordered*input$fcor2 
     
     
     #define output text (recap)
-    output$printload <- renderLoadingRecap(loadtxt, genLoadingss, isolate(input$p))
-    output$printload_cross <- renderLoadingRecap(loadtxt_cross, genLoadingss_cross, isolate(input$p))
-    output$printres <- renderLoadingRecap(residualstxt, genResiduals, isolate(input$p))
-    output$printres2 <- renderLoadingRecap(residualstxt2, genResiduals2, isolate(input$p))
+    output$printload <- renderLoadingRecap(loadtxt, genLoadingss, isolate(input$p2))
+    output$printload_cross <- renderLoadingRecap(loadtxt_cross, genLoadingss_cross, isolate(input$p2))
+    output$printres <- renderLoadingRecap(residualstxt_seq, genResiduals, isolate(input$p2))
+    output$printres2 <- renderLoadingRecap(residualstxt_alter, genResiduals2, isolate(input$p2))
     
     #replace rmseas with results
-    results <- as.data.frame(main.2f(isolate(input$p),isolate(input$fcor),genLoadingss,genLoadingss_cross))
+    results <- as.data.frame(main.2f(isolate(input$p2),isolate(input$fcor2),genLoadingss,genLoadingss_cross))
     
     #define text
     output$plottext <- renderText({ 
       paste("In the plots below, the number of crossloadings in the true model is on the x-axis; this number 
-	          varies from 0 to ", isolate(input$p), " (the number of variables). The cross-loadings in the true 
+	          varies from 0 to ", isolate(input$p2), " (the number of variables). The cross-loadings in the true 
 	          model are being added either a) to the first factor first and then to the second factor
 	          or b) to the alternating factors. Their exact values are given by the list above. (If some 
 	          values are missing from the plots, one of the residual variances is negative or the model 
@@ -315,8 +352,8 @@ server <- function(input, output, session) {
   # 		#relss <- alpha.omega.pop(specLoadingss)
   # 		
   # 		output$printloadspec <- renderText({
-  # 				tnoend=paste(as.character(round(specLoadingss[1:(isolate(input$p)-1)],3)), collapse=", ")
-  # 				tend=paste(as.character(round(specLoadingss[isolate(input$p)],3)), collapse=", ")
+  # 				tnoend=paste(as.character(round(specLoadingss[1:(isolate(input$p2)-1)],3)), collapse=", ")
+  # 				tend=paste(as.character(round(specLoadingss[isolate(input$p2)],3)), collapse=", ")
   # 				paste(loadtxtspec, tnoend," and ", tend, ".", sep="")
   # 			})
   # 		
@@ -333,7 +370,7 @@ server <- function(input, output, session) {
   # 
   # 		addtxt <- "Warning: these values of main loadings and cross-loadings are not very realistic!"
   # 		
-  # 		if(input$p<=pm){
+  # 		if(input$p2<=pm){
   # 			addtxt = paste0("Single-click on a linetype within the legend to remove/re-add the corresponding plot. ",
   # 										"Double-click on a linetype to remove/re-add all other plots.")
   # 		}  
@@ -356,7 +393,7 @@ server <- function(input, output, session) {
   # 	xend <- c(xsta[2:length(xsta)],NA)
   # 	yend <- c(ysta[2:length(ysta)],NA)
   # 
-  # 	gs <- nrow(relspecx)/input$p #gridsize, as set in alpha.omega.pop.varyl
+  # 	gs <- nrow(relspecx)/input$p2 #gridsize, as set in alpha.omega.pop.varyl
   # 	
   # 	xend[seq(gs,nrow(relspecx),by=gs)]=xend[seq(gs,nrow(relspecx),by=gs)-1] 
   # 	yend[seq(gs,nrow(relspecx),by=gs)]=yend[seq(gs,nrow(relspecx),by=gs)-1] 
@@ -395,7 +432,7 @@ server <- function(input, output, session) {
   # 				scale_color_gradient2(name="omega",midpoint=.5,low="lightpink", mid="salmon",high="blue") +
   # 				theme(legend.title = element_blank())
   # 		
-  # 		if (isolate(input$p)<=pm){ # show linetype legend
+  # 		if (isolate(input$p2)<=pm){ # show linetype legend
   # 			plt <- ggplotly(plt,tooltip = c("text")) %>%
   # 					add_annotations(text="changing loading",  xref="paper", yref="paper",
   # 						x=0.15, xanchor="right", 
