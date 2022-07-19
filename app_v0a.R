@@ -1,5 +1,6 @@
 library(shiny)
 library(plotly) 
+library(DT)
 
 source("functions_app.R")
 
@@ -25,6 +26,10 @@ js1 <- paste("function MRdoesOverlap() {",
 
 ui <- fluidPage(
   tags$head(tags$script(HTML(js1), type = "text/javascript")), #corrsponds js (for adjusting the overlapping anchors )
+  tags$head(
+    tags$style(HTML(".help-block a {color: black !important;}"))
+  ),
+  withMathJax(),
   
   h1("SEM Fit Indices' Sensitivity to cross-loadings"),
   h4("How sensitive are RMSEA, CFI, and SRMR to omitted cross-loadings? This app will generate population covariance matrices 
@@ -85,9 +90,16 @@ ui <- fluidPage(
     mainPanel(  
       conditionalPanel(
         condition = "input.custom == '2factor'", 
-        h4(textOutput("printload")),h4(textOutput("printload_cross")),
-        h4(textOutput("printres")),h4(textOutput("printres2")),h4(textOutput("plottext")), 
-        plotlyOutput("plots")
+
+        # h4(textOutput("printload")),h4(textOutput("printload_cross")),
+        # h4(textOutput("printres")),h4(textOutput("printres2")),
+        
+        p(textOutput("plottext")), 
+        plotlyOutput("plots"),
+        
+        
+        uiOutput("tabletext"),
+        dataTableOutput("table_2f"),
       ),
       
       conditionalPanel(
@@ -210,11 +222,36 @@ server <- function(input, output, session) {
     genResiduals2 <- 1-genLoadingss^2-genLoadingss_cross_reordered^2-2*genLoadingss*genLoadingss_cross_reordered*input$fcor2 
     
     
+    
     #define output text (recap)
     output$printload <- renderLoadingRecap(loadtxt, genLoadingss, isolate(input$p2))
     output$printload_cross <- renderLoadingRecap(loadtxt_cross, genLoadingss_cross, isolate(input$p2))
     output$printres <- renderLoadingRecap(residualstxt_seq, genResiduals, isolate(input$p2))
     output$printres2 <- renderLoadingRecap(residualstxt_alter, genResiduals2, isolate(input$p2))
+    
+    # the table output
+    table <- as.data.frame(rbind(round(genLoadingss, 3),
+                                 round(genLoadingss_cross, 3),
+                                 round(genResiduals, 3),
+                                 round(genResiduals2,3)))
+    row.names(table) <- c("Main loadings","Cross loadings","Residual vairances: to 1st factor, then 2nd","Residual vairances: to alternating factor")
+    output$table_2f <- renderDataTable(datatable(table,colnames = FALSE,
+                                                 options = list( pageLength = 4, scrollX = T, dom = 't',
+                                                                 headerCallback = JS(
+                                                                   "function(thead, data, start, end, display){",
+                                                                   "  $(thead).remove();",
+                                                                   "}"))))
+    output$tabletext <- renderUI({
+      withMathJax(
+        helpText("Main loadings are the randomly generated main loadings for a 2 factor-model. 
+                 Crossloadings are randomly generated and added to the true modelm, one by one. 
+                 Residual vairances: to 1st factor, then 2nd means that when these loadings are added first to one factor.
+                 Residual vairances: to alternating factor means that when these loadings are added to alternating factors.
+                 "),
+        helpText("Both residual variances are computed as $$ 1 - ML^2 - CL^2 - 2 * FactorCorrelation * ML * CL$$")
+        
+      )
+    })
     
     #replace rmseas with results
     results <- as.data.frame(main.2f(isolate(input$p2),isolate(input$fcor2),genLoadingss,genLoadingss_cross))
@@ -238,9 +275,9 @@ server <- function(input, output, session) {
       
       plot1 <- ggplot(data=results,aes(x=number_crossloadings))+ 
         geom_line(aes(y=rmsea_same_f,
-                      color="To 1st factor, then 2d"))+ 
+                      color="To 1st factor, then 2nd"))+ 
         geom_point(aes(y=rmsea_same_f,
-                       color="To 1st factor, then 2d",
+                       color="To 1st factor, then 2nd",
                        text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same_f))))+
         
         geom_line(aes(y=rmsea_dif_f,color ="To alternating factors"))+
@@ -256,9 +293,9 @@ server <- function(input, output, session) {
       
       plot2 <- ggplot(data=results, aes(x=number_crossloadings))+ 
         geom_line(aes(y=cfi_same_f,
-                      color="To 1st factor, then 2d"))+ 
+                      color="To 1st factor, then 2nd"))+ 
         geom_point(aes(y=cfi_same_f,
-                       color="To 1st factor, then 2d",
+                       color="To 1st factor, then 2nd",
                        text = paste0("# of cross Loadings: ", number_crossloadings,
                                      "<br>CFI: ", sprintf('%.3f', cfi_same_f))))+
         geom_line(aes(y=cfi_dif_f, 
@@ -275,10 +312,10 @@ server <- function(input, output, session) {
       
       plot3 <- ggplot(data=results, aes(x=number_crossloadings))+ 
         geom_line(aes(y=srmr_same_f,
-                      color="To 1st factor, then 2d"))+ 
+                      color="To 1st factor, then 2nd"))+ 
         geom_line(aes(y=srmr_dif_f,color="To alternating factors"))+ 
         geom_point(aes(y=srmr_same_f,
-                       color="To 1st factor, then 2d",
+                       color="To 1st factor, then 2nd",
                        text = paste0("# of cross Loadings: ", number_crossloadings,
                                      "<br>SRMR: ", sprintf('%.3f', srmr_same_f))))+
         geom_point(aes(y=srmr_dif_f,
