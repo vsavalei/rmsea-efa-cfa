@@ -1,8 +1,8 @@
 
 #R functions for app
 library(lavaan)
-library(ggplot2)
-library(plotly)
+# library(ggplot2)
+# library(plotly)
 
 
 #--------------------------------------------------------------------------------------#

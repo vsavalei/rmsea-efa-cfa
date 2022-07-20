@@ -23,12 +23,9 @@ js1 <- paste("function MRdoesOverlap() {",
              "});",sep = "\n")
 
 
-
 ui <- fluidPage(
   tags$head(tags$script(HTML(js1), type = "text/javascript")), #corrsponds js (for adjusting the overlapping anchors )
-  tags$head(
-    tags$style(HTML(".help-block a {color: black !important;}"))
-  ),
+
   withMathJax(),
   
   h1("SEM Fit Indices' Sensitivity to cross-loadings"),
@@ -51,11 +48,11 @@ ui <- fluidPage(
       br(),br(), 
       
       radioButtons("custom", "I would like to examine a ", 
-                   c("Two factor model"="2factor","Three factor model"="3factor")),
+                   c("Two factor model"="twoFactor","Three factor model"="threeFactor")),
       
       
       conditionalPanel(
-        condition = "input.custom == '2factor'",
+        condition = "input.custom == 'twoFactor'",
         sliderInput("p2", "Total number of variables:", min=4, max=50, step=2, value=8), 
         
         sliderInput("fcor2", "Factor correlation in the true model:", min=0, max=1, value=.2), 
@@ -67,7 +64,7 @@ ui <- fluidPage(
       ),
       
       conditionalPanel(
-        condition = "input.custom == '3factor'",
+        condition = "input.custom == 'threeFactor'",
         sliderInput("p3", "Total number of variables:", min=6, max=51, step=3, value=9), 
         
         sliderInput("fcor3", "Factor correlation in the true model:", min=0, max=1, value=.2), 
@@ -89,7 +86,7 @@ ui <- fluidPage(
     
     mainPanel(  
       conditionalPanel(
-        condition = "input.custom == '2factor'", 
+        condition = "input.custom == 'twoFactor'", 
 
         # h4(textOutput("printload")),h4(textOutput("printload_cross")),
         # h4(textOutput("printres")),h4(textOutput("printres2")),
@@ -199,35 +196,55 @@ server <- function(input, output, session) {
   
   observeEvent(input$updateButton,{      
     
+    pSwitch <- switch(input$custom,
+                      twoFactor = input$p2,
+                      threeFactor = input$p3)
+    
+    aveloadingSwitch <- switch(input$custom,
+                               twoFactor = input$aveloading2,
+                               threeFactor = input$aveloading3)
+    
+    rangeSwitch <- switch(input$custom,
+                          twoFactor = input$range2,
+                          threeFactor = input$range3)
+    
+    range_crossSwitch <- switch(input$custom,
+                          twoFactor = input$range_cross2,
+                          threeFactor = input$range_cross3)
+    
+    aveloading_crossSwitch <- switch(input$custom,
+                          twoFactor = input$aveloading_cross2,
+                          threeFactor = input$aveloading_cross3)
+    
+    fcorSwitch <- switch(input$custom,
+                         twoFactor = input$fcor2,
+                         threeFactor = input$fcor3)
+    
     loadtxt <- "The true model is a 2-factor model with the randomly generated main loadings of " 
-    genLoadingss <- runif(input$p2, min=input$aveloading2-.5*input$range2, max=input$aveloading2+.5*input$range2)
+    genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch)
     
     loadtxt_cross <- "The randomly generated values of crossloadings to be added to the true model, one by one, are " 
-    genLoadingss_cross <- runif(input$p2, min=input$aveloading_cross2 -.5*input$range_cross2, max=input$aveloading_cross2+.5*input$range_cross2)
-    
-    #residualstxt <- HTML(paste0("<p>", "Use this formula: $$\\hat{A}_{\\small{\\textrm{M€}}} =", mean(genLoadingss_cross),"$$","</p>"))
-    
-    # $$ 1 - ML^2 - CL^2 - 2 \times FactorCorrelation \times ML \times CL$$
+    genLoadingss_cross <- runif(pSwitch, min=aveloading_crossSwitch -.5*range_crossSwitch, max=aveloading_crossSwitch+.5*range_crossSwitch)
     
     residualstxt_seq <- paste0("When these loadings are added first to one factor, then to the next, the residual variances in the final
 	  model with all the cross-loadings added are (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice
 	  the factor correlation times the main loading times the crossloading)  " )
-    genResiduals <- 1-genLoadingss^2-genLoadingss_cross^2-2*genLoadingss*genLoadingss_cross*input$fcor2 
+    genResiduals <- 1-genLoadingss^2-genLoadingss_cross^2-2*genLoadingss*genLoadingss_cross*fcorSwitch 
     
     residualstxt_alter <- "When these loadings are added to alternating factors, the residual variances in the final 
 	  model with all the cross-loadings added are 
 	  (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice 
 	  the factor correlation times the main loading times the crossloading)  " 
     genLoadingss_cross_reordered<- c(genLoadingss_cross[c(TRUE, FALSE)], genLoadingss_cross[c(TRUE, FALSE)])
-    genResiduals2 <- 1-genLoadingss^2-genLoadingss_cross_reordered^2-2*genLoadingss*genLoadingss_cross_reordered*input$fcor2 
+    genResiduals2 <- 1-genLoadingss^2-genLoadingss_cross_reordered^2-2*genLoadingss*genLoadingss_cross_reordered*fcorSwitch 
     
     
     
     #define output text (recap)
-    output$printload <- renderLoadingRecap(loadtxt, genLoadingss, isolate(input$p2))
-    output$printload_cross <- renderLoadingRecap(loadtxt_cross, genLoadingss_cross, isolate(input$p2))
-    output$printres <- renderLoadingRecap(residualstxt_seq, genResiduals, isolate(input$p2))
-    output$printres2 <- renderLoadingRecap(residualstxt_alter, genResiduals2, isolate(input$p2))
+    output$printload <- renderLoadingRecap(loadtxt, genLoadingss, isolate(pSwitch))
+    output$printload_cross <- renderLoadingRecap(loadtxt_cross, genLoadingss_cross, isolate(pSwitch))
+    output$printres <- renderLoadingRecap(residualstxt_seq, genResiduals, isolate(pSwitch))
+    output$printres2 <- renderLoadingRecap(residualstxt_alter, genResiduals2, isolate(pSwitch))
     
     # the table output
     table <- as.data.frame(rbind(round(genLoadingss, 3),
@@ -238,12 +255,12 @@ server <- function(input, output, session) {
     output$table_2f <- renderDataTable(datatable(table,colnames = FALSE,
                                                  options = list( pageLength = 4, scrollX = T, dom = 't',
                                                                  headerCallback = JS(
-                                                                   "function(thead, data, start, end, display){",
+                                                                   "function(thead, data, start, end, display){", 
                                                                    "  $(thead).remove();",
                                                                    "}"))))
     output$tabletext <- renderUI({
       withMathJax(
-        helpText("Main loadings are the randomly generated main loadings for a 2 factor-model. 
+        helpText("Main loadings are the randomly generated main loadings for a ", numText, ". 
                  Crossloadings are randomly generated and added to the true modelm, one by one. 
                  Residual vairances: to 1st factor, then 2nd means that when these loadings are added first to one factor.
                  Residual vairances: to alternating factor means that when these loadings are added to alternating factors.
@@ -253,19 +270,28 @@ server <- function(input, output, session) {
       )
     })
     
-    #replace rmseas with results
-    results <- as.data.frame(main.2f(isolate(input$p2),isolate(input$fcor2),genLoadingss,genLoadingss_cross))
-    
+    # store numerical value 2 or 3 
+    numText <- switch(input$custom,
+                       twoFactor = "2-factor model",
+                       threeFactor = "3-factor model")
+  
     #define text
     output$plottext <- renderText({ 
       paste("In the plots below, the number of crossloadings in the true model is on the x-axis; this number 
-	          varies from 0 to ", isolate(input$p2), " (the number of variables). The cross-loadings in the true 
+	          varies from 0 to ", isolate(pSwitch), " (the number of variables). The cross-loadings in the true 
 	          model are being added either a) to the first factor first and then to the second factor
 	          or b) to the alternating factors. Their exact values are given by the list above. (If some 
 	          values are missing from the plots, one of the residual variances is negative or the model 
-	          failed to converge). The fitted model is a 2-factor model with no cross-loadings. 
+	          failed to converge). The fitted model is a ", numText ," with no cross-loadings. 
 	          You can hover over the curve to get specific fit index values.", sep="") 
     })
+    
+    # Allow switching the main function between two-factor model and three-factor model
+    mainFunc <- switch(input$custom,
+                       twoFactor = main.2f,
+                       threeFactor = main.3f)
+    #replace rmseas with results
+    results <- as.data.frame(mainFunc(isolate(pSwitch),isolate(fcorSwitch),genLoadingss,genLoadingss_cross))
     
     output$plots <- renderPlotly({
       # compute the range for the plots 
