@@ -36,7 +36,6 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      
       "Factor loadings are drawn from uniform distributions on [a,b] with mean L=(a+b)/2 and range R=(b-a). 
 				 The user can set ranges (MR and CR) to zero to specify constant main loadings and constant cross-loadings. 
 				 Variables' variances are assumed to be 1. For this reason, 
@@ -75,38 +74,55 @@ ui <- fluidPage(
         
       ),
       
-      conditionalPanel(
-        condition = "input.custom == 'spec'",
-        strong("Specify the main factor loading for each variable:"),br(),
-        uiOutput("slideload"),actionButton("updateButtonSpec", "Plot!!")
-      ),
+      # conditionalPanel(
+      #   condition = "input.custom == 'spec'",
+      #   strong("Specify the main factor loading for each variable:"),br(),
+      #   uiOutput("slideload"),actionButton("updateButtonSpec", "Plot!!")
+      # ),
       
       actionButton("updateButton", "Compute fit index values!")
     ),
     
     mainPanel(  
-      conditionalPanel(
-        condition = "input.custom == 'twoFactor'", 
-
-        # h4(textOutput("printload")),h4(textOutput("printload_cross")),
-        # h4(textOutput("printres")),h4(textOutput("printres2")),
-        
-        p(textOutput("plottext")), 
+        p(textOutput("plottext")),
         plotlyOutput("plots"),
-        
-        
+
         uiOutput("tabletext"),
-        dataTableOutput("table_2f"),
-      ),
+        dataTableOutput("table_2f")
+      # conditionalPanel(
+      #   condition = "input.custom == 'twoFactor'", 
+      # 
+      #   # h4(textOutput("printload")),h4(textOutput("printload_cross")),
+      #   # h4(textOutput("printres")),h4(textOutput("printres2")),
+      #   
+      #   p(textOutput("plottext")), 
+      #   plotlyOutput("plots"),
+      # 
+      #   uiOutput("tabletext"),
+      #   dataTableOutput("table_2f"),
+      # ),
       
-      conditionalPanel(
-        condition = "input.custom == 'spec'",
-        h4(textOutput("printloadspec")),
-        br(),
-        h4(textOutput("plottextspec")),
-        plotlyOutput("plotspec"),
-        h4(textOutput("plottextspecadd"))
-      )
+      # conditionalPanel(
+      #   condition = "input.custom == 'threeFactor'",
+      # 
+      #   # h4(textOutput("printload")),h4(textOutput("printload_cross")),
+      #   # h4(textOutput("printres")),h4(textOutput("printres2")),
+      # 
+      #   p(textOutput("plottext")),
+      #   plotlyOutput("plots"),
+      # 
+      #   uiOutput("tabletext"),
+      #   dataTableOutput("table_2f"),
+      # )
+      
+      # conditionalPanel(
+      #   condition = "input.custom == 'spec'",
+      #   h4(textOutput("printloadspec")),
+      #   br(),
+      #   h4(textOutput("plottextspec")),
+      #   plotlyOutput("plotspec"),
+      #   h4(textOutput("plottextspecadd"))
+      # )
       
     )
   )
@@ -220,23 +236,33 @@ server <- function(input, output, session) {
                          twoFactor = input$fcor2,
                          threeFactor = input$fcor3)
     
-    loadtxt <- "The true model is a 2-factor model with the randomly generated main loadings of " 
+    print(pSwitch)
+    print(aveloadingSwitch)
+    print(rangeSwitch)
+    print(range_crossSwitch)
+    print(aveloading_crossSwitch)
+    print(fcorSwitch)
+
+    # loadtxt <- "The true model is a 2-factor model with the randomly generated main loadings of " 
     genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch)
     
-    loadtxt_cross <- "The randomly generated values of crossloadings to be added to the true model, one by one, are " 
+    print(length(genLoadingss))
+    # loadtxt_cross <- "The randomly generated values of crossloadings to be added to the true model, one by one, are " 
     genLoadingss_cross <- runif(pSwitch, min=aveloading_crossSwitch -.5*range_crossSwitch, max=aveloading_crossSwitch+.5*range_crossSwitch)
-    
-    residualstxt_seq <- paste0("When these loadings are added first to one factor, then to the next, the residual variances in the final
-	  model with all the cross-loadings added are (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice
-	  the factor correlation times the main loading times the crossloading)  " )
+    print(length(genLoadingss_cross))
+#     
+#     residualstxt_seq <- paste0("When these loadings are added first to one factor, then to the next, the residual variances in the final
+# 	  model with all the cross-loadings added are (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice
+# 	  the factor correlation times the main loading times the crossloading)  " )
     genResiduals <- 1-genLoadingss^2-genLoadingss_cross^2-2*genLoadingss*genLoadingss_cross*fcorSwitch 
-    
-    residualstxt_alter <- "When these loadings are added to alternating factors, the residual variances in the final 
-	  model with all the cross-loadings added are 
-	  (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice 
-	  the factor correlation times the main loading times the crossloading)  " 
-    genLoadingss_cross_reordered<- c(genLoadingss_cross[c(TRUE, FALSE)], genLoadingss_cross[c(TRUE, FALSE)])
+    print(length(genResiduals))
+#     residualstxt_alter <- "When these loadings are added to alternating factors, the residual variances in the final 
+# 	  model with all the cross-loadings added are 
+# 	  (i.e., 1 minus squared main loading, minus squared crossloading, and minus twice 
+# 	  the factor correlation times the main loading times the crossloading)  " 
+    genLoadingss_cross_reordered <- c(genLoadingss_cross[c(TRUE, FALSE)], genLoadingss_cross[c(TRUE, FALSE)])
     genResiduals2 <- 1-genLoadingss^2-genLoadingss_cross_reordered^2-2*genLoadingss*genLoadingss_cross_reordered*fcorSwitch 
+    print(length(genResiduals2))
     
     
     
