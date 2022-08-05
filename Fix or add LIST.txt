@@ -20,9 +20,9 @@ horizontal lines: so it should be a bit above .08 for RMSEA and SRMR, and a bit 
 
 4. Specify Manually does not yet work (least priority, may be removed in the end)
 
-5. Add the option for 3 factors
+[ADDED] 5. Add the option for 3 factors
 
-6. Replace: "1 minus squared main loading, minus squared crossloading, and minus twice the factor correlation times 
+[FIXED] 6. Replace: "1 minus squared main loading, minus squared crossloading, and minus twice the factor correlation times 
 the main loading times the crossloading" with a math expression. Advanced: Any way to print the values of added loadings under
 the graphs on the x-axis? Too fancy? 
 
