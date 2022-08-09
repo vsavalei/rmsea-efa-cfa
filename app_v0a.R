@@ -353,7 +353,7 @@ server <- function(input, output, session) {
                          color="Diff2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif2_f))))+
           
-          geom_abline(color="grey",slope=0, intercept=0.05) + 
+          #geom_abline(color="grey",slope=0, intercept=0.05) + 
           geom_abline(color="grey",slope=0, intercept=0.08) +  
           labs(color = "How crossloadings are added") + 
           xlab("Number of crossloadings in the true model")+

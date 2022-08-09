@@ -40,23 +40,27 @@ get.fits<-function(Sigmastar,lavmodel){
       p<-nrow(Sigmastar)
       colnames(Sigmastar)<-rownames(Sigmastar)<-paste0("x",1:p) 
       
-      fit<-try(cfa(lavmodel,sample.nobs=100,sample.cov=Sigmastar,check.post=FALSE),
+      fit<-try(cfa(lavmodel,sample.nobs=100,sample.cov=Sigmastar,check.post=FALSE,warn=FALSE),
                silent=TRUE) #n.obs is arbitrary
-      conv=inspect(fit, "converged")
       
-      df=fitmeasures(fit)["df"]
-      fmin<-fitmeasures(fit)["fmin"]*2 #lavaan saves 1/2 of Fml
-      rmsea<-sqrt(fmin/df) 
+      if (class(fit)=="try-error" | inspect(fit,"converged")==FALSE){
+        fits=rep(NA,4)
+        } else {
+          conv=inspect(fit,"converged")
+          df=fitmeasures(fit)["df"]
+          fmin<-fitmeasures(fit)["fmin"]*2 #lavaan saves 1/2 of Fml
+          rmsea<-sqrt(fmin/df) 
       
-      srmr<-fitmeasures(fit)["srmr"] #can be taken directly from lavaan
+          srmr<-fitmeasures(fit)["srmr"] #can be taken directly from lavaan
       
-      #below follows the traditional computation of the CFI, although we could have just used 
-      #determinant of Sigmastar, as shown in the appendix
-      fit_null<- lavaan:::lav_object_independence(fit) #independence model
-      fmin_null<-fitmeasures(fit_null)["fmin"]*2 #lavaan saves 1/2 of Fml
-      df_null<-fitmeasures(fit_null)["df"]
-      cfi<-1-fmin/fmin_null
-      fits<-c(conv,rmsea,srmr, cfi)
+          #below follows the traditional computation of the CFI, although we could have just used 
+          #determinant of Sigmastar, as shown in the appendix
+          fit_null<- lavaan:::lav_object_independence(fit) #independence model
+          fmin_null<-fitmeasures(fit_null)["fmin"]*2 #lavaan saves 1/2 of Fml
+          df_null<-fitmeasures(fit_null)["df"]
+          cfi<-1-fmin/fmin_null
+          fits<-c(conv,rmsea,srmr, cfi)
+      }
       names(fits)<-c("conv","rmsea","srmr","cfi")
       return(fits) 
 }  
@@ -85,17 +89,19 @@ L<-matrix(c(l1,rep(0,p),l2),nrow=p,ncol=k)
 Lsame<-Ldif<-L #create two alternating orders
 Phi<-matrix(fcor,nrow=k,ncol=k)  #factor cor matrix
 diag(Phi)<-1
+diagPsi <- 1-diag(L%*%Phi%*%t(L)) #residual variances 
 
 tosave<-c("number_crossloadings","conv_same","rmsea_same_f","srmr_same_f","cfi_same_f",
-           "conv_dif","rmsea_dif_f","srmr_dif_f","cfi_dif_f")
+           "conv_dif","rmsea_dif_f","srmr_dif_f","cfi_dif_f",paste0("x",1:p,"same"),paste0("x",1:p,"dif"))
 results <- data.frame(matrix(vector(), 0, length(tosave), dimnames=list(c(), tosave)))
-results[1,]<-c(0,1,0,0,1,1,0,0,1) #for zero cross-loadings
+results[1,]<-c(0,1,0,0,1,1,0,0,1,diagPsi,diagPsi) #for zero cross-loadings
 
 for (t in (1:p)) { 
     #add one cross-loading at a time, to the same factor
     if (t<(p/k+1)) {Lsame[t,2]=cld[t]} else {Lsame[t,1]=cld[t]}
     Sigmastar_same<-Lsame%*%Phi%*%t(Lsame) #true cov matrix
-   
+    diagPsi_same<-1-diag(Sigmastar_same)
+    
    if (max(diag(Sigmastar_same))>.99) {fits_same<-rep(NA,4)} else {
       diag(Sigmastar_same)<-1; fits_same<-get.fits(Sigmastar_same,model)
       }  
@@ -104,13 +110,14 @@ for (t in (1:p)) {
    if (t %% 2 ==0) {j=1; a<-(.5*p+.5*t)} else {j=2; a<-(.5*(t-1)+1)}
    Ldif[a,j]<-cld[t]
    Sigmastar_dif<-Ldif%*%Phi%*%t(Ldif) #true cov matrix
+   diagPsi_dif<-1-diag(Sigmastar_dif)
    
    if (max(diag(Sigmastar_dif))>.99){fits_dif<-rep(NA,4)} else {
       diag(Sigmastar_dif)<-1 #adding error variances in the remaining amounts
       fits_dif<-get.fits(Sigmastar_dif,model)  
        }
   
-    results[t+1,]<-c(t,fits_same,fits_dif) 
+   results[t+1,]<-c(t,fits_same,fits_dif,diagPsi_same,diagPsi_dif) 
   
 }  #end of t loop
 #print(dim(results))
@@ -134,14 +141,16 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
    Lsame1<-Lsame2<-Ldif1<-Ldif2<-L
    Phi<-matrix(fcor,nrow=k,ncol=k)  #factor cor matrix
    diag(Phi)<-1
+   diagPsi <- 1-diag(L%*%Phi%*%t(L)) #residual variances 
    
    tosave<-c("number_crossloadings","conv_same1","rmsea_same1_f","srmr_same1_f","cfi_same1_f",
              "conv_same2","rmsea_same2_f","srmr_same2_f","cfi_same2_f",
               "conv_dif1","rmsea_dif1_f","srmr_dif1_f","cfi_dif1_f",
-             "conv_dif2","rmsea_dif2_f","srmr_dif2_f","cfi_dif2_f")
-   
+             "conv_dif2","rmsea_dif2_f","srmr_dif2_f","cfi_dif2_f",paste0("x",1:p,"same1"),
+             paste0("x",1:p,"same2"),paste0("x",1:p,"dif1"),paste0("x",1:p,"dif2"))
+  
    results <- data.frame(matrix(vector(), 0, length(tosave), dimnames=list(c(), tosave)))
-   results[1,]<-c(0,rep(c(1,0,0,1),4)) #for zero cross-loadings
+   results[1,]<-c(0,rep(c(1,0,0,1),4),rep(diagPsi,4)) #for zero cross-loadings
    
    #here we explicitly calculate the column/row index for each of the four orders
    #Partition the matrix L into 9 nine cells where each has p/k rows and 1 column:
@@ -187,10 +196,10 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       Lsame2[row.same2[t],col.same2[t]] <- cld[t]
       Ldif1[row.dif1[t],col.dif1[t]] <- cld[t]
       Ldif2[row.dif2[t],col.dif2[t]] <- cld[t]
-      #print(Lsame1)
-      #print(Lsame2)
-      #print(Ldif1)
-      print(Ldif2)
+      # print(Lsame1)
+      # print(Lsame2)
+      # print(Ldif1)
+      # print(Ldif2)
       
       #true score cov matrices
       Sigmastar_same1<-Lsame1%*%Phi%*%t(Lsame1) 
@@ -198,13 +207,23 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       Sigmastar_dif1<-Ldif1%*%Phi%*%t(Ldif1) 
       Sigmastar_dif2<-Ldif2%*%Phi%*%t(Ldif2)
       
+      #debug (delete later)
+      if (t==15){save(Sigmastar_same1,Sigmastar_same2,file="debug.RData")}
+      
+      #residual variances (computing for all t)
+      diagPsi_same1<-1-diag(Sigmastar_same1)
+      diagPsi_same2<-1-diag(Sigmastar_same2)
+      diagPsi_dif1<-1-diag(Sigmastar_dif1)
+      diagPsi_dif2<-1-diag(Sigmastar_dif2)
+      
       # rather than checking the eigenvalues, lets check if true score variances are too close to 1
+      #is this always the same for these types of models? 
       if (max(diag(Sigmastar_same1))>.99) {fits_same1<-rep(NA,4)} else {
          diag(Sigmastar_same1)<-1; fits_same1<-get.fits(Sigmastar_same1,model)
       }  
       
       if (max(diag(Sigmastar_same2))>.99) {fits_same2<-rep(NA,4)} else {
-         diag(Sigmastar_same2)<-1; fits_same2<-get.fits(Sigmastar_same2,model)
+         diag(Sigmastar_same2)<-1; fits_same2<-get.fits(Sigmastar_same2,model) 
       } 
       
       if (max(diag(Sigmastar_dif1))>.99) {fits_dif1<-rep(NA,4)} else {
@@ -215,27 +234,31 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
          diag(Sigmastar_dif2)<-1; fits_dif2<-get.fits(Sigmastar_dif2,model)
       } 
       
-      results[t+1,]<-c(t,fits_same1,fits_same2,fits_dif1,fits_dif2) 
+      results[t+1,]<-c(t,fits_same1,fits_same2,fits_dif1,fits_dif2,diagPsi_same1,diagPsi_same2,
+                       diagPsi_dif1,diagPsi_dif2) 
       
    }  #end of t loop
+   
    #print(dim(results))
    return(results)
 }  
 
-
 #constraint: l^2+cld^2+2*phi*ld*cld < 1 
 
 #test of main.2f
-# l=rep(.7,30)
-# cld=rep(.3,30)
-# main.2f(l=l,cld=cld) 
+#l=rep(.7,10)
+#cld=rep(.3,10)
+#out<-main.2f(p=10,l=l,cld=cld,fcor=0) 
+#out
 
 #test of main.3f
-#p=30
-#l=rep(.7,p)
-#cld<-seq(.3,.89,by=.01)
-#cld=rep(.3,2*p)
-#main.3f(p=p,l=l,cld=cld) 
+# p=15
+# fcor=0
+# l=rep(.7,p)
+# #cld<-seq(.3,.89,by=.01)
+# cld=rep(.7,2*p)
+# out1<-main.3f(fcor=fcor,p=p,l=l,cld=cld) 
+# out1
 
 #test 
 # p=8
