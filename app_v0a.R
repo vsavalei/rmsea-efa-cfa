@@ -26,7 +26,7 @@ js1 <- paste("function MRdoesOverlap() {",
 ui <- fluidPage(
   tags$head(tags$script(HTML(js1), type = "text/javascript")), #corrsponds js (for adjusting the overlapping anchors )
 
-  withMathJax(),
+
   
   h1("SEM Fit Indices' Sensitivity to cross-loadings"),
   h4("How sensitive are RMSEA, CFI, and SRMR to omitted cross-loadings? This app will generate population covariance matrices 
@@ -86,9 +86,10 @@ ui <- fluidPage(
     mainPanel(  
         p(textOutput("plottext")),
         plotlyOutput("plots"),
-
+        br(),
         uiOutput("tabletext"),
-        dataTableOutput("table_2f")
+        br(),
+        dataTableOutput("table")
       # conditionalPanel(
       #   condition = "input.custom == 'twoFactor'", 
       # 
@@ -99,7 +100,7 @@ ui <- fluidPage(
       #   plotlyOutput("plots"),
       # 
       #   uiOutput("tabletext"),
-      #   dataTableOutput("table_2f"),
+      #   dataTableOutput("table"),
       # ),
       
       # conditionalPanel(
@@ -112,7 +113,7 @@ ui <- fluidPage(
       #   plotlyOutput("plots"),
       # 
       #   uiOutput("tabletext"),
-      #   dataTableOutput("table_2f"),
+      #   dataTableOutput("table"),
       # )
       
       # conditionalPanel(
@@ -277,28 +278,37 @@ server <- function(input, output, session) {
     # output$printres2 <- renderLoadingRecap(residualstxt_alter, genResiduals_2f_alt, isolate(pSwitch))
     
     # the table output
-    table <- as.data.frame(rbind(round(genLoadingss, 3),
-                                 round(genLoadingss_crossSwitch, 3),
-                                 round(genResiduals_2f_seq, 3),
-                                 round(genResiduals_2f_alt,3)))
-    row.names(table) <- c("Main loadings","Cross loadings","Residual vairances: to 1st factor, then 2nd","Residual vairances: to alternating factor")
-    output$table_2f <- renderDataTable(datatable(table,colnames = FALSE,
-                                                 options = list( pageLength = 4, scrollX = T, dom = 't',
-                                                                 # to hide the header of the table as it's irrevalent 
-                                                                 headerCallback = JS(
-                                                                   "function(thead, data, start, end, display){", 
-                                                                   "  $(thead).remove();",
-                                                                   "}"))))
+    table2f <- as.data.frame(rbind(
+      #paste(LETTERS[1:8]),
+      round(genLoadingss, 3),
+      round(genLoadingss_crossSwitch, 3),
+      round(genResiduals_2f_seq, 3),
+      round(genResiduals_2f_alt, 3)
+    ))
+    #row.names(table2f) <- c("Order added", "Main loadings","Cross loadings","Residual vairances: to 1st factor, then 2nd","Residual vairances: to alternating factor")
+    row.names(table2f) <- c("Main loadings","Cross loadings","Residual vairances: to 1st factor, then 2nd","Residual vairances: to alternating factor")
+    #colnames(table2f) <-  c(1:8)
+    print(head(table2f))
+    output$table <- renderDataTable(datatable(table2f,
+                                              colnames = paste0(rep("P", pSwitch), c(1:pSwitch), sep = ""),
+                                              caption = "Parameter values when all cross-loadings are added",  
+                                                 options = list( scrollX = T, # to add a horizontal scroller in case of having a wide table 
+                                                                 dom = 't', # to hide the table's filer and search function 
+                                                                 ordering = F
+                                                                 # # to hide the header of the table as it's irrevalent
+                                                                 # headerCallback = JS("function(thead, data, start, end, display){",
+                                                                 #                     "  $(thead).remove();",
+                                                                 #                     "}")
+                                                                 )))
     output$tabletext <- renderUI({
-      withMathJax(
-        helpText("Main loadings are the randomly generated main loadings for a ", numText, ". 
-                 Crossloadings are randomly generated and added to the true modelm, one by one. 
-                 Residual vairances: to 1st factor, then 2nd means that when these loadings are added first to one factor.
-                 Residual vairances: to alternating factor means that when these loadings are added to alternating factors.
-                 "),
-        helpText("Both residual variances are computed as $$ 1 - ML^2 - CL^2 - 2 * FactorCorrelation * ML * CL$$")
-        
+      HTML(paste((strong(em("Main loadings")))," for a ", numText, " are randomly generated." ,
+                 (strong(em("Crossloadings")))," are randomly generated and added to the true modelm, one by one.",
+                 strong(em("Residual vairances: to 1st factor, then 2nd")),"means that when these loadings are added first to one factor." ,
+                 (strong(em("Residual vairances: to alternating factor"))), " means that when these loadings are added to alternating factors.")
+                 
       )
+      
+      
     })
     
     # store numerical value 2 or 3 
@@ -331,7 +341,8 @@ server <- function(input, output, session) {
         upperbound_srmr = max(c(results$srmr_same1_f,results$srmr_dif1_f,results$srmr_same2_f,results$srmr_dif2_f,0.08)) + 0.005
         lowerbound_cfi = min(c(results$cfi_same1_f,results$cfi_same2_f,results$cfi_dif1_f,results$cfi_dif2_f,0.9))-0.005
         
-        print(names(results))
+        print(results)
+        
         plot1 <- ggplot(data=results,aes(x=number_crossloadings)) +
           geom_line(mapping = aes( y=rmsea_same1_f, color="Same1"),size=1)+
           geom_point(aes(y=rmsea_same1_f,
@@ -462,6 +473,8 @@ server <- function(input, output, session) {
         upperbound_rmsea = max(c(results$rmsea_same_f,results$rmsea_dif_f,0.08)) + 0.005
         upperbound_srmr = max(c(results$srmr_same_f,results$srmr_dif_f,0.08)) + 0.005
         lowerbound_cfi = min(c(results$cfi_same_f,results$cfi_dif_f,0.9))-0.005
+        
+        print(results)
         
         plot1 <- ggplot(data=results,aes(x=number_crossloadings))+ 
           geom_line(aes(y=rmsea_same_f,
