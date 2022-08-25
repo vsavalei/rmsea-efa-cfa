@@ -160,7 +160,8 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
    # asterisks indicate main loadings. The numbered groups of loadings, 1-6, are cycled through
    # in different orders in the four configurations below
    
-   #first "same" order is columnwise: all loadings in 3, then in 5, then in 1, then in 6, then in 2, then in 4
+   #first "same" order is columnwise: all loadings in 3, then in 5, then in 1, then in 6, 
+   #then in 2, then in 4
    row.same1<-c((p/k+1):p,1:(p/k),(2*p/k+1):p,1:(2*p/k)) 
    col.same1<-c(rep(1,2*p/k),rep(2,2*p/k),rep(3,2*p/k))
       
@@ -188,6 +189,9 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
    row.dif2<-ind
    col.dif2<-rep(c(1,2,3,3,1,2),p/k) 
    
+   #added 8/15/2022
+   orders<-cbind(cld,row.same1,col.same1,row.same2,col.same2,row.dif1,col.dif1,row.dif2,col.dif2)
+   
    for (t in (1:length(row.same1))) {  #cycling through all (p-1)*k crossloadings to add
       
       #print(t)
@@ -196,10 +200,10 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       Lsame2[row.same2[t],col.same2[t]] <- cld[t]
       Ldif1[row.dif1[t],col.dif1[t]] <- cld[t]
       Ldif2[row.dif2[t],col.dif2[t]] <- cld[t]
-      # print(Lsame1)
-      # print(Lsame2)
-      # print(Ldif1)
-      # print(Ldif2)
+       # print(Lsame1)
+       # print(Lsame2)
+       # print(Ldif1)
+       # print(Ldif2)
       
       #true score cov matrices
       Sigmastar_same1<-Lsame1%*%Phi%*%t(Lsame1) 
@@ -237,10 +241,12 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       results[t+1,]<-c(t,fits_same1,fits_same2,fits_dif1,fits_dif2,diagPsi_same1,diagPsi_same2,
                        diagPsi_dif1,diagPsi_dif2) 
       
-   }  #end of t loop
+    }  #end of t loop
    
    #print(dim(results))
-   return(results)
+   results.full<-list(results,orders) #now includes orders
+   names(results.full)<-c("results","orders")
+   return(results.full) #now returns a list with two elements
 }  
 
 #constraint: l^2+cld^2+2*phi*ld*cld < 1 
@@ -255,10 +261,11 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
 # p=15
 # fcor=0
 # l=rep(.7,p)
-# #cld<-seq(.3,.89,by=.01)
+# cld<-seq(.3,.89,by=.01)
 # cld=rep(.7,2*p)
-# out1<-main.3f(fcor=fcor,p=p,l=l,cld=cld) 
-# out1
+# out1<-main.3f(fcor=fcor,p=p,l=l,cld=cld)
+# out1$results  
+# out1$orders
 
 #test 
 # p=8
