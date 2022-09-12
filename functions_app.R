@@ -121,7 +121,11 @@ for (t in (1:p)) {
   
 }  #end of t loop
 #print(dim(results))
-return(results)
+
+#print(dim(results))
+results.full<-list(results) #now includes orders
+names(results.full)<-c("results")
+return(results.full) #now returns a list with two elements
 }  
 
 

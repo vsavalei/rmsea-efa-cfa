@@ -42,9 +42,10 @@ ui <- fluidPage(
 				 Variables' variances are assumed to be 1. For this reason, 
 				 the maximum possible value of a crossloading is determined by the corresponding value of the main loading and the factor correlation. 
 				 The upper limit on the choice of the average CL value below is computed from the average ML value specified above. This is done in 
-				 an attempt to minimize impossible configurations (with negative error variances). However, 
+				 an attempt to minimize impossible configurations (with negative error variances).", 
+      strong("However, 
 				 impossible configurations can still be generated unless both MR and CR are set to zero. Check the printed residual 
-				 variances for negative values. Plots will be omitted for all such configurations.",  
+				 variances for negative values. Plots will be omitted for all such configurations."),  
       br(),br(), 
       
       radioButtons("custom", "I would like to examine a ", 
@@ -92,56 +93,21 @@ ui <- fluidPage(
         br(),
         dataTableOutput("table"),
         dataTableOutput("table2")
-      # conditionalPanel(
-      #   condition = "input.custom == 'twoFactor'", 
-      # 
-      #   # h4(textOutput("printload")),h4(textOutput("printload_cross")),
-      #   # h4(textOutput("printres")),h4(textOutput("printres2")),
-      #   
-      #   p(textOutput("plottext")), 
-      #   plotlyOutput("plots"),
-      # 
-      #   uiOutput("tabletext"),
-      #   dataTableOutput("table"),
-      # ),
-      
-      # conditionalPanel(
-      #   condition = "input.custom == 'threeFactor'",
-      # 
-      #   # h4(textOutput("printload")),h4(textOutput("printload_cross")),
-      #   # h4(textOutput("printres")),h4(textOutput("printres2")),
-      # 
-      #   p(textOutput("plottext")),
-      #   plotlyOutput("plots"),
-      # 
-      #   uiOutput("tabletext"),
-      #   dataTableOutput("table"),
-      # )
-      
-      # conditionalPanel(
-      #   condition = "input.custom == 'spec'",
-      #   h4(textOutput("printloadspec")),
-      #   br(),
-      #   h4(textOutput("plottextspec")),
-      #   plotlyOutput("plotspec"),
-      #   h4(textOutput("plottextspecadd"))
-      # )
-      
     )
   )
 )
 
 #--------------------------------------------------------------------------------------------------------------------#
 # helper function for repeated identical text formatting
-renderLoadingRecap <- function(loadtxt, loadings, p, digits=3){
-  return(renderText({
-    tnoend <- paste(sapply(loadings[1:(p-1)], function(x){
-      sprintf(paste0('%.', digits, 'f'), x)}), collapse=", ")
-    tend <- paste(sapply(loadings[p], function(x){
-      sprintf(paste0('%.', digits, 'f'), x)}), collapse=", ")
-    paste(loadtxt, tnoend," and ", tend, ".", sep="")
-  }))
-}
+# renderLoadingRecap <- function(loadtxt, loadings, p, digits=3){
+#   return(renderText({
+#     tnoend <- paste(sapply(loadings[1:(p-1)], function(x){
+#       sprintf(paste0('%.', digits, 'f'), x)}), collapse=", ")
+#     tend <- paste(sapply(loadings[p], function(x){
+#       sprintf(paste0('%.', digits, 'f'), x)}), collapse=", ")
+#     paste(loadtxt, tnoend," and ", tend, ".", sep="")
+#   }))
+# }
 
 #--------------------------------------------------------------------------------------------------------------------#
 # server code
@@ -155,7 +121,6 @@ server <- function(input, output, session) {
   # pm = 10 #cutoff for p to stop displaying some output to prevent clutter  
   
   #define input sliders for TWO factor model
-  
   output$slidemax_cross2 <- renderUI({
     sliderInput("aveloading_cross2", "Average Cross Loading (CL)", min = 0, 
                 max = round((sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2),2), 
@@ -199,24 +164,7 @@ server <- function(input, output, session) {
                 value = min(0,input$input$aveloading_cross3, (1-input$input$aveloading_cross3)), round = -2, step = 0.01) 
   })
   
-  # #for user defined factor loadings: 
-  # numP <- reactive({input$p2})  # get number of loadings from ui slider 
-  # 
-  # output$slideload <- renderUI({   # create custom loading sliders
-  #   lapply(1:(numP()), function(i) {
-  #     sliderInput(inputId = paste0("load", i), # this creates input$load1, input$load2, etc.
-  #                 label = paste0("Loading ", i),
-  #                 min = 0, max = 1, value = .5)
-  #   })
-  # })
-  
-  # button pressed to update randomly generated loadings
-  # code needed
-  
   observeEvent(input$updateButton,{      
-    
-    
-
     pSwitch <- switch(input$custom,
                       twoFactor = input$p2,
                       threeFactor = input$p3)
@@ -245,6 +193,11 @@ server <- function(input, output, session) {
                          twoFactor = input$fcor2,
                          threeFactor = input$fcor3)
     
+    # store numerical value 2 or 3 
+    numText <- switch(input$custom,
+                      twoFactor = "2-factor model",
+                      threeFactor = "3-factor model")
+    
 
     # loadtxt <- "The true model is a 2-factor model with the randomly generated main loadings of " 
     genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch)
@@ -261,144 +214,119 @@ server <- function(input, output, session) {
     
     show_modal_spinner() # show the modal window
     
-    #replace rmseas with results
-    results <- as.data.frame(mainFunc(isolate(pSwitch),isolate(fcorSwitch),genLoadingss,numCrossLoading))
-    #print(tail(results, n=1))
-    
+    resultsAndOrder <- mainFunc(isolate(pSwitch),isolate(fcorSwitch),genLoadingss,numCrossLoading)
+    results <- as.data.frame(resultsAndOrder$results)
+    orders <- resultsAndOrder$orders
+    print(orders)
+
     remove_modal_spinner() # remove it when done
     
-    genResiduals_seq <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same")))%>%
-      unname()%>%
-      unlist()
-   
-    genResiduals_alt <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif")))%>%
-      unname()%>%
-      unlist()
- 
-  
-    
-    # the table output
-    table2f1 <- as.data.frame(rbind(
-      #paste(LETTERS[1:8]),
-      round(genLoadingss, 3),
-      round(numCrossLoading, 3),
-      round(genResiduals_seq, 3)
-    ))
-    
-    # the table output
-    table2f2 <- as.data.frame(rbind(
-      #paste(LETTERS[1:8]),
-      round(genLoadingss, 3),
-      round(c(numCrossLoading[c(TRUE, FALSE)],numCrossLoading[c(FALSE, TRUE)]),3),
-      round(genResiduals_alt, 3)
-    ))
-    
-    row.names(table2f1) <- c("Main loadings","Cross loadings","Residual vairances")
-    row.names(table2f2) <- c("Main loadings","Cross loadings","Residual vairances")
 
-    table3f <- as.data.frame(rbind(
-      round(genLoadingss, 3),
-      round(numCrossLoading, 3),
-      round(genResiduals_seq, 3),
-      round(genResiduals_alt, 3)
-    ))
-    row.names(table3f) <- c("Main loadings","Cross loadings","Same1 and Same2","Diff1 and Diff2")
-    
-    # To customize the table header for 3-factor model 
-    sketchThreeFactor = htmltools::withTags(table(
-      class = 'display',
-      thead(
-        tr(
-          th(rowspan = 2, 'Order added'),
-          th(class = 'dt-center', colspan = pSwitch, 'Same'),
-          th(class = 'dt-center', colspan = pSwitch, 'Different')
-        ),
-        tr(
-          lapply(paste0(rep("Item", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)), th)
-        )
-      )
-    ))
-    
-    # To customize the table header for 3-factor model 
-    # sketchTwoFactor = htmltools::withTags(table(
-    #   class = 'display',
-    #   thead(
-    #     tr(
-    #       lapply(paste0(rep("Item", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)), th)
-    #       ),
-    #   thead(
-    #     tr("MeanLoading"),
-    #     tr(
-    #       th(rowspan = 2, "fav"),
-    #       th("color")
-    #         ),
-    #     tr(th("Fl")),
-    #         tr(
-    #           th(rowspan = 2, "least fav"),
-    #           th("color")
-    #         ),
-    #     tr(th(
-    #           "Flavor"
-    #         ))
-    #   )
-    # )))
-    
     if (input$custom =="threeFactor"){
-      output$table <- renderDataTable(datatable(table3f,
-                                                container = sketchThreeFactor,
-                                                colnames = F,
-                                                caption = "Parameter values when all cross-loadings are added",  
-                                                options = list( scrollX = T, # to add a horizontal scroller in case of having a wide table 
-                                                                dom = 't', # to hide the table's filer and search function 
-                                                                ordering = F # to hide the ordering function 
-                                                                
-                                                                # # to hide the header of the table as it's irrevalent
-                                                                # headerCallback = JS("function(thead, data, start, end, display){",
-                                                                #                     "  $(thead).remove();",
-                                                                #                     "}")
+      genResiduals_same1 <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same1")))%>%
+        unname()%>%
+        unlist()
+      genResiduals_same2 <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same2")))%>%
+        unname()%>%
+        unlist()
+      genResiduals_dif1 <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif1")))%>%
+        unname()%>%
+        unlist()
+      genResiduals_dif2 <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif2")))%>%
+        unname()%>%
+        unlist()
+      
+      table3f1 <- as.data.frame(rbind(
+        round(genLoadingss, 3),
+        round(genResiduals_same1, 3),
+        round(genResiduals_same2, 3),
+        round(genResiduals_dif1, 3),
+        round(genResiduals_dif2, 3)
+      ))
+      row.names(table3f1) <- c("Main loadings","Residual Variance: Same1","Residual Variance: Same2","Residual Variance: Diff1","Residual Variance: Diff2")
+      
+      table3f2 <- as.data.frame(t(round(numCrossLoading, 3)))
+      row.names(table3f2) <- c("Cross loading values")
+     
+      
+      output$table <- renderDataTable(datatable(table3f1,
+                                               # container = sketchThreeFactor,
+                                                colnames = paste0(rep("item", input$p3), c(1: input$p3)),
+                                                caption = "Parameter values when all cross-loadings are added",
+                                                options = list( scrollX = T, # to add a horizontal scroller in case of having a wide table
+                                                                dom = 't', # to hide the table's filer and search function
+                                                                ordering = F # to hide the ordering function
                                                 )))
-    }
+      output$table2 <- renderDataTable(datatable(table3f2,
+                                                # container = sketchThreeFactor,
+                                                colnames = paste0(rep("CL", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)),
+                                                caption = "All the cross-loadings generated",
+                                                options = list( scrollX = T, # to add a horizontal scroller in case of having a wide table
+                                                                dom = 't', # to hide the table's filer and search function
+                                                                ordering = F # to hide the ordering function
+                                                )))
+      
+      # Print out different values for crossloadings 
+      print("Same1 Cross loading values")
+      print(sparseMatrix(j = orders[,"col.same1"], i = orders[,"row.same1"], x = orders[,"cld"]))
+      print("Same2 Cross loading values")
+      print(sparseMatrix(j = orders[,"col.same2"], i = orders[,"row.same2"], x = orders[,"cld"]))
+      print("Dif1 Cross loading values")
+      print(sparseMatrix(j = orders[,"col.dif1"], i = orders[,"row.dif1"], x = orders[,"cld"]))
+      print("Dif2 Cross loading values")
+      print(sparseMatrix(j = orders[,"col.dif2"], i = orders[,"row.dif2"], x = orders[,"cld"]))
+      }
 
     
     if (input$custom =="twoFactor"){
+      genResiduals_seq <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same")))%>%
+        unname()%>%
+        unlist()
+      
+      genResiduals_alt <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif")))%>%
+        unname()%>%
+        unlist()
+      # the table output
+      table2f1 <- as.data.frame(rbind(
+        round(genLoadingss, 3),
+        round(numCrossLoading, 3),
+        round(genResiduals_seq, 3)
+      ))
+      
+      # the table output
+      table2f2 <- as.data.frame(rbind(
+        round(genLoadingss, 3),
+        round(c(numCrossLoading[c(TRUE, FALSE)],numCrossLoading[c(FALSE, TRUE)]),3),
+        round(genResiduals_alt, 3)
+      ))
+      
+      row.names(table2f1) <- c("Main loadings","Cross loadings","Residual vairances")
+      row.names(table2f2) <- c("Main loadings","Cross loadings","Residual vairances")
+      
+      # Render the first data table 
       output$table <- renderDataTable(
         datatable(
           table2f1,
-          # container = sketchTwoFactor,
-          # colnames = F,
-          
           colnames = paste0(rep("item", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)),
           caption = "Parameter values when all cross-loadings are added in sequential order",
           options = list(
             scrollX = T,# to add a horizontal scroller in case of having a wide table
             dom = 't',# to hide the table's filer and search function
             ordering = F # to hide the ordering function
-            
-            # # to hide the header of the table as it's irrevalent
-            # headerCallback = JS("function(thead, data, start, end, display){",
-            #                     "  $(thead).remove();",
-            #                     "}")
           )
         )
       )
       
+      # Render the second data table 
       output$table2 <- renderDataTable(
         datatable(
           table2f2,
-          # container = sketchTwoFactor,
-          # colnames = F,
-          
           colnames = paste0(rep("item", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)),
           caption = "Parameter values when all cross-loadings are added in alternating order",
           options = list(
             scrollX = T,# to add a horizontal scroller in case of having a wide table
             dom = 't',# to hide the table's filer and search function
             ordering = F # to hide the ordering function
-            
-            # # to hide the header of the table as it's irrevalent
-            # headerCallback = JS("function(thead, data, start, end, display){",
-            #                     "  $(thead).remove();",
-            #                     "}")
           )
         )
       )
@@ -411,11 +339,6 @@ server <- function(input, output, session) {
                  strong(em("Residual vairances: to alternating factor")), " means that when these loadings are added to alternating factors.")
       )
     })
-    
-    # store numerical value 2 or 3 
-    numText <- switch(input$custom,
-                       twoFactor = "2-factor model",
-                       threeFactor = "3-factor model")
   
     #define text
     output$plottext <- renderText({ 
@@ -431,7 +354,7 @@ server <- function(input, output, session) {
 
     if (input$custom =="threeFactor"){
       output$plots <- renderPlotly({
-        
+
         upperbound_rmsea = max(c(results$rmsea_same1_f,results$rmsea_dif1_f,results$rmsea_same2_f,results$rmsea_dif2_f,0.08)) + 0.005
         upperbound_srmr = max(c(results$srmr_same1_f,results$srmr_dif1_f,results$srmr_same2_f,results$srmr_dif2_f,0.08)) + 0.005
         lowerbound_cfi = min(c(results$cfi_same1_f,results$cfi_same2_f,results$cfi_dif1_f,results$cfi_dif2_f,0.9))-0.005
@@ -441,120 +364,120 @@ server <- function(input, output, session) {
           suppressWarnings(geom_point(aes(y=rmsea_same1_f,
                          color="Same1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same1_f)))))+
-          
+
           geom_line(mapping = aes( y=rmsea_same2_f, color="Same2"))+
           suppressWarnings(geom_point(aes(y=rmsea_same2_f,
                          color="Same2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same2_f)))))+
-          
+
           geom_line(mapping = aes( y=rmsea_dif1_f, color="Diff1"))+
           suppressWarnings(geom_point(aes(y=rmsea_dif1_f,
                          color="Diff1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif1_f)))))+
-          
+
           geom_line(mapping = aes( y=rmsea_dif2_f, color="Diff2"))+
           suppressWarnings(geom_point(aes(y=rmsea_dif2_f,
                          color="Diff2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif2_f)))))+
-          
-          #geom_abline(color="grey",slope=0, intercept=0.05) + 
-          geom_abline(color="grey",slope=0, intercept=0.08) +  
-          labs(color = "How crossloadings are added") + 
+
+          #geom_abline(color="grey",slope=0, intercept=0.05) +
+          geom_abline(color="grey",slope=0, intercept=0.08) +
+          labs(color = "How crossloadings are added") +
           xlab("Number of crossloadings in the true model")+
           ylab("RMSEA")+
           ylim(NA,upperbound_rmsea)
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
-        
+
         plot2 <- ggplot(data=results,aes(x=number_crossloadings)) +
           geom_line(mapping = aes( y=cfi_same1_f, color="Same1"))+
           suppressWarnings(geom_point(aes(y=cfi_same1_f,
                          color="Same1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_same1_f)))))+
-          
+
           geom_line(mapping = aes( y=cfi_same2_f, color="Same2"))+
           suppressWarnings(geom_point(aes(y=cfi_same2_f,
                          color="Same2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_same2_f)))))+
-          
+
           geom_line(mapping = aes( y=cfi_dif1_f, color="Diff1"))+
           suppressWarnings(geom_point(aes(y=cfi_dif1_f,
                          color="Diff1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif1_f)))))+
-          
+
           geom_line(mapping = aes( y=cfi_dif2_f, color="Diff2"))+
           suppressWarnings(geom_point(aes(y=cfi_dif2_f,
                          color="Diff2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif2_f)))))+
-          
+
           geom_abline(color="grey",slope=0, intercept=0.90) +
-          labs(color = "How crossloadings are added") + 
+          labs(color = "How crossloadings are added") +
           xlab("Number of crossloadings in the true model")+
           ylab("CFI")+
           ylim(lowerbound_cfi,NA)
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
-        
+
         plot3 <- ggplot(data=results,aes(x=number_crossloadings)) +
           geom_line(mapping = aes( y=srmr_same1_f, color="Same1"))+
           suppressWarnings(geom_point(aes(y=srmr_same1_f,
                          color="Same1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_same1_f)))))+
-          
+
           geom_line(mapping = aes( y=srmr_same2_f, color="Same2"))+
           suppressWarnings(geom_point(aes(y=srmr_same2_f,
                          color="Same2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_same2_f)))))+
-          
+
           geom_line(mapping = aes( y=srmr_dif1_f, color="Diff1"))+
           suppressWarnings(geom_point(aes(y=srmr_dif1_f,
                          color="Diff1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif1_f)))))+
-          
+
           geom_line(mapping = aes( y=srmr_dif2_f, color="Diff2"))+
           suppressWarnings(geom_point(aes(y=srmr_dif2_f,
                          color="Diff2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif2_f)))))+
-          
+
           geom_abline(color="grey",slope=0, intercept=0.90) +
-          labs(color = "How crossloadings are added") + 
+          labs(color = "How crossloadings are added") +
           xlab("Number of crossloadings in the true model")+
           ylab("SRMR")+
           ylim(NA,upperbound_srmr)
         p3 <- ggplotly(plot3,tooltip = c("text"))  #%>% style(showlegend = FALSE)
-        
+
         subplot(
           p1,p2,p3,
           nrows = 1
         ) %>%
-          layout(annotations = list( 
-            list( 
+          layout(annotations = list(
+            list(
               x = 0.151,
               y = 1.0,
-              text = "RMSEA",  
-              xref = "paper",  
-              yref = "paper",  
-              xanchor = "center",  
-              yanchor = "bottom",  
-              showarrow = FALSE 
-            ),  
-            list( 
-              x = 0.5, 
-              y = 1,  
-              text = "CFI",  
-              xref = "paper",  
-              yref = "paper",  
-              xanchor = "center",  
-              yanchor = "bottom",  
-              showarrow = FALSE 
-            ),  
-            list( 
-              x = 0.85,  
-              y = 1,  
-              text = "SRMR",  
-              xref = "paper",  
-              yref = "paper",  
-              xanchor = "center",  
-              yanchor = "bottom",  
-              showarrow = FALSE 
+              text = "RMSEA",
+              xref = "paper",
+              yref = "paper",
+              xanchor = "center",
+              yanchor = "bottom",
+              showarrow = FALSE
+            ),
+            list(
+              x = 0.5,
+              y = 1,
+              text = "CFI",
+              xref = "paper",
+              yref = "paper",
+              xanchor = "center",
+              yanchor = "bottom",
+              showarrow = FALSE
+            ),
+            list(
+              x = 0.85,
+              y = 1,
+              text = "SRMR",
+              xref = "paper",
+              yref = "paper",
+              xanchor = "center",
+              yanchor = "bottom",
+              showarrow = FALSE
             ) ))
       })
     }
