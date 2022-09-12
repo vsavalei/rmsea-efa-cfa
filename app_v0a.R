@@ -2,7 +2,7 @@ library(shiny)
 library(plotly) 
 library(DT)
 library(dplyr)
-
+library(shinybusy)
 source("functions_app.R")
 
 #--------------------------------------------------------------------------------------------------------------------#
@@ -33,7 +33,7 @@ ui <- fluidPage(
   h4("How sensitive are RMSEA, CFI, and SRMR to omitted cross-loadings? This app will generate population covariance matrices 
 	from CFA models with 2 or 3 factors and with a varying number of crossloadings. The app will then fit the CFA model 
 	with	no cross-loadings to these population matrices and compute the population RMSEA, CFI, and SRMR."),
-  h6("This app was developed by", HTML(paste0(a("Victoria Savalei", href="http://ubcsemlab.com/"))), "and Lihan (Bill) Chen"),
+  h6("This app was developed by", HTML(paste0(a("Victoria Savalei", href="http://ubcsemlab.com/"))), "and Muhua (Karyn) Huang"),
   
   sidebarLayout(
     sidebarPanel(
@@ -90,7 +90,8 @@ ui <- fluidPage(
         br(),
         uiOutput("tabletext"),
         br(),
-        dataTableOutput("table")
+        dataTableOutput("table"),
+        dataTableOutput("table2")
       # conditionalPanel(
       #   condition = "input.custom == 'twoFactor'", 
       # 
@@ -214,6 +215,8 @@ server <- function(input, output, session) {
   
   observeEvent(input$updateButton,{      
     
+    
+
     pSwitch <- switch(input$custom,
                       twoFactor = input$p2,
                       threeFactor = input$p3)
@@ -255,52 +258,54 @@ server <- function(input, output, session) {
     mainFunc <- switch(input$custom,
                        twoFactor = main.2f,
                        threeFactor = main.3f)
+    
+    show_modal_spinner() # show the modal window
+    
     #replace rmseas with results
     results <- as.data.frame(mainFunc(isolate(pSwitch),isolate(fcorSwitch),genLoadingss,numCrossLoading))
     #print(tail(results, n=1))
     
-    print(select(tail(results, n=1),matches("x[0-9]{1,2}same")))
+    remove_modal_spinner() # remove it when done
     
-    print(select(tail(results, n=1),matches("x[0-9]{1,2}dif")))
-    
-    genResiduals_2f_seq <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same")))%>%
+    genResiduals_seq <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same")))%>%
       unname()%>%
       unlist()
    
-    genResiduals_2f_alt <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif")))%>%
+    genResiduals_alt <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif")))%>%
       unname()%>%
       unlist()
  
   
     
-    # genResiduals_2f_seq <- 1-genLoadingss^2-numCrossLoading^2-2*genLoadingss*numCrossLoading*fcorSwitch # formula for 2f model 
-    # 
-    # genLoadingss_cross_2f_reordered <- c(numCrossLoading[c(TRUE, FALSE)], numCrossLoading[c(FALSE, TRUE)]) ###Is this a typo? The order of c(TRUE, FALSE)
-    # 
-    # genResiduals_2f_alt <- 1-genLoadingss^2-genLoadingss_cross_2f_reordered^2-2*genLoadingss*genLoadingss_cross_2f_reordered*fcorSwitch 
-    
-    
     # the table output
-    table2f <- as.data.frame(rbind(
+    table2f1 <- as.data.frame(rbind(
       #paste(LETTERS[1:8]),
       round(genLoadingss, 3),
       round(numCrossLoading, 3),
-      round(genResiduals_2f_seq, 3),
-      round(genResiduals_2f_alt, 3)
+      round(genResiduals_seq, 3)
     ))
     
-    row.names(table2f) <- c("Main loadings","Cross loadings","Residual vairances: to 1st factor, then 2nd","Residual vairances: to alternating factor")
+    # the table output
+    table2f2 <- as.data.frame(rbind(
+      #paste(LETTERS[1:8]),
+      round(genLoadingss, 3),
+      round(c(numCrossLoading[c(TRUE, FALSE)],numCrossLoading[c(FALSE, TRUE)]),3),
+      round(genResiduals_alt, 3)
+    ))
+    
+    row.names(table2f1) <- c("Main loadings","Cross loadings","Residual vairances")
+    row.names(table2f2) <- c("Main loadings","Cross loadings","Residual vairances")
 
     table3f <- as.data.frame(rbind(
       round(genLoadingss, 3),
       round(numCrossLoading, 3),
-      round(genResiduals_2f_seq, 3),
-      round(genResiduals_2f_alt, 3)
+      round(genResiduals_seq, 3),
+      round(genResiduals_alt, 3)
     ))
     row.names(table3f) <- c("Main loadings","Cross loadings","Same1 and Same2","Diff1 and Diff2")
     
     # To customize the table header for 3-factor model 
-    sketch = htmltools::withTags(table(
+    sketchThreeFactor = htmltools::withTags(table(
       class = 'display',
       thead(
         tr(
@@ -309,14 +314,38 @@ server <- function(input, output, session) {
           th(class = 'dt-center', colspan = pSwitch, 'Different')
         ),
         tr(
-          lapply(paste0(rep("P", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)), th)
+          lapply(paste0(rep("Item", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)), th)
         )
       )
     ))
     
+    # To customize the table header for 3-factor model 
+    # sketchTwoFactor = htmltools::withTags(table(
+    #   class = 'display',
+    #   thead(
+    #     tr(
+    #       lapply(paste0(rep("Item", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)), th)
+    #       ),
+    #   thead(
+    #     tr("MeanLoading"),
+    #     tr(
+    #       th(rowspan = 2, "fav"),
+    #       th("color")
+    #         ),
+    #     tr(th("Fl")),
+    #         tr(
+    #           th(rowspan = 2, "least fav"),
+    #           th("color")
+    #         ),
+    #     tr(th(
+    #           "Flavor"
+    #         ))
+    #   )
+    # )))
+    
     if (input$custom =="threeFactor"){
       output$table <- renderDataTable(datatable(table3f,
-                                                container = sketch,
+                                                container = sketchThreeFactor,
                                                 colnames = F,
                                                 caption = "Parameter values when all cross-loadings are added",  
                                                 options = list( scrollX = T, # to add a horizontal scroller in case of having a wide table 
@@ -334,14 +363,36 @@ server <- function(input, output, session) {
     if (input$custom =="twoFactor"){
       output$table <- renderDataTable(
         datatable(
-          table2f,
-          colnames = paste0(rep("P", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)),
-          caption = "Parameter values when all cross-loadings are added",
+          table2f1,
+          # container = sketchTwoFactor,
+          # colnames = F,
+          
+          colnames = paste0(rep("item", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)),
+          caption = "Parameter values when all cross-loadings are added in sequential order",
           options = list(
-            scrollX = T,
-            # to add a horizontal scroller in case of having a wide table
-            dom = 't',
-            # to hide the table's filer and search function
+            scrollX = T,# to add a horizontal scroller in case of having a wide table
+            dom = 't',# to hide the table's filer and search function
+            ordering = F # to hide the ordering function
+            
+            # # to hide the header of the table as it's irrevalent
+            # headerCallback = JS("function(thead, data, start, end, display){",
+            #                     "  $(thead).remove();",
+            #                     "}")
+          )
+        )
+      )
+      
+      output$table2 <- renderDataTable(
+        datatable(
+          table2f2,
+          # container = sketchTwoFactor,
+          # colnames = F,
+          
+          colnames = paste0(rep("item", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)),
+          caption = "Parameter values when all cross-loadings are added in alternating order",
+          options = list(
+            scrollX = T,# to add a horizontal scroller in case of having a wide table
+            dom = 't',# to hide the table's filer and search function
             ordering = F # to hide the ordering function
             
             # # to hide the header of the table as it's irrevalent
@@ -515,8 +566,6 @@ server <- function(input, output, session) {
         upperbound_rmsea = max(c(results$rmsea_same_f,results$rmsea_dif_f,0.08)) + 0.005
         upperbound_srmr = max(c(results$srmr_same_f,results$srmr_dif_f,0.08)) + 0.005
         lowerbound_cfi = min(c(results$cfi_same_f,results$cfi_dif_f,0.9))-0.005
-        
-        print(results)
         
         plot1 <- ggplot(data=results,aes(x=number_crossloadings))+ 
           geom_line(aes(y=rmsea_same_f,
