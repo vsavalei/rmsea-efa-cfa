@@ -26,8 +26,19 @@ js1 <- paste("function MRdoesOverlap() {",
 
 
 ui <- fluidPage(
-  tags$head(tags$script(HTML(js1), type = "text/javascript")), #corrsponds js (for adjusting the overlapping anchors )
-  withMathJax(),
+  tags$head(#tags$script(HTML(js1), type = "text/javascript"),#corrsponds js (for adjusting the overlapping anchors )
+            
+            tags$style(
+              HTML(".shiny-notification {
+             position:fixed;
+             top: calc(50%);
+             left: calc(50%);
+             opacity: 1;
+             }
+             "
+              )
+            )), 
+
 
   
   h1("SEM Fit Indices' Sensitivity to cross-loadings"),
@@ -77,12 +88,6 @@ ui <- fluidPage(
         
       ),
       
-      # conditionalPanel(
-      #   condition = "input.custom == 'spec'",
-      #   strong("Specify the main factor loading for each variable:"),br(),
-      #   uiOutput("slideload"),actionButton("updateButtonSpec", "Plot!!")
-      # ),
-      
       actionButton("updateButton", "Compute fit index values!")
     ),
     
@@ -111,10 +116,7 @@ server <- function(input, output, session) {
   session$onFlushed(function() {
     session$sendCustomMessage("regrid", FALSE);
   }, FALSE);
-  
-  # nsdl = 3 #mumber of sign digits
-  # pm = 10 #cutoff for p to stop displaying some output to prevent clutter  
-  
+
   #define input sliders for TWO factor model
   output$slidemax_cross2 <- renderUI({
     sliderInput("aveloading_cross2", "Average Cross Loading (CL)", min = 0, 
@@ -212,22 +214,27 @@ server <- function(input, output, session) {
     resultsAndOrder <- mainFunc(isolate(pSwitch),isolate(fcorSwitch),genLoadingss,numCrossLoading)
     results <- as.data.frame(resultsAndOrder$results)
     orders <- resultsAndOrder$orders
-    print(orders)
 
     remove_modal_spinner() # remove it when done
     
+    #send an alart for negative residual variances
+    residuals <- select(tail(results, n=1),matches("x[0-9]{1,2}"))
+    if (any(residuals < 0)){
+      showNotification(paste("Nagative Variance Warning"), duration = 5, type = "error")
+    }
+    
 
     if (input$custom =="threeFactor"){
-      genResiduals_same1 <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same1")))%>%
+      genResiduals_same1 <- as.vector(select(residuals,matches("x[0-9]{1,2}same1")))%>%
         unname()%>%
         unlist()
-      genResiduals_same2 <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same2")))%>%
+      genResiduals_same2 <- as.vector(select(residuals,matches("x[0-9]{1,2}same2")))%>%
         unname()%>%
         unlist()
-      genResiduals_dif1 <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif1")))%>%
+      genResiduals_dif1 <- as.vector(select(residuals,matches("x[0-9]{1,2}dif1")))%>%
         unname()%>%
         unlist()
-      genResiduals_dif2 <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif2")))%>%
+      genResiduals_dif2 <- as.vector(select(residuals,matches("x[0-9]{1,2}dif2")))%>%
         unname()%>%
         unlist()
       
@@ -266,9 +273,9 @@ server <- function(input, output, session) {
       print(sparseMatrix(j = orders[,"col.same1"], i = orders[,"row.same1"], x = orders[,"cld"]))
       print("Same2 Cross loading values")
       print(sparseMatrix(j = orders[,"col.same2"], i = orders[,"row.same2"], x = orders[,"cld"]))
-      print("Dif1 Cross loading values")
+      print("Diff1 Cross loading values")
       print(sparseMatrix(j = orders[,"col.dif1"], i = orders[,"row.dif1"], x = orders[,"cld"]))
-      print("Dif2 Cross loading values")
+      print("Diff2 Cross loading values")
       print(sparseMatrix(j = orders[,"col.dif2"], i = orders[,"row.dif2"], x = orders[,"cld"]))
       
       output$matrix <- renderUI({
@@ -295,11 +302,11 @@ server <- function(input, output, session) {
 
     
     if (input$custom =="twoFactor"){
-      genResiduals_seq <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}same")))%>%
+      genResiduals_seq <- as.vector(select(residuals,matches("x[0-9]{1,2}same")))%>%
         unname()%>%
         unlist()
       
-      genResiduals_alt <- as.vector(select(tail(results, n=1),matches("x[0-9]{1,2}dif")))%>%
+      genResiduals_alt <- as.vector(select(residuals,matches("x[0-9]{1,2}dif")))%>%
         unname()%>%
         unlist()
       # the table output
@@ -393,8 +400,6 @@ server <- function(input, output, session) {
           suppressWarnings(geom_point(aes(y=rmsea_dif2_f,
                          color="Diff2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif2_f)))))+
-
-          #geom_abline(color="grey",slope=0, intercept=0.05) +
           geom_abline(color="grey",slope=0, intercept=0.08) +
           labs(color = "How crossloadings are added") +
           xlab("Number of crossloadings in the true model")+
