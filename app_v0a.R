@@ -3,6 +3,7 @@ library(plotly)
 library(DT)
 library(dplyr)
 library(shinybusy)
+library(Matrix)
 source("functions_app.R")
 
 #--------------------------------------------------------------------------------------------------------------------#
@@ -26,7 +27,7 @@ js1 <- paste("function MRdoesOverlap() {",
 
 ui <- fluidPage(
   tags$head(tags$script(HTML(js1), type = "text/javascript")), #corrsponds js (for adjusting the overlapping anchors )
-
+  withMathJax(),
 
   
   h1("SEM Fit Indices' Sensitivity to cross-loadings"),
@@ -90,24 +91,18 @@ ui <- fluidPage(
         plotlyOutput("plots"),
         br(),
         uiOutput("tabletext"),
-        br(),
+        
         dataTableOutput("table"),
-        dataTableOutput("table2")
+        dataTableOutput("table2"),
+        conditionalPanel(
+          condition = "input$custom = input$aveloading3",
+          br(),
+          uiOutput("matrix")
+        )
     )
   )
 )
 
-#--------------------------------------------------------------------------------------------------------------------#
-# helper function for repeated identical text formatting
-# renderLoadingRecap <- function(loadtxt, loadings, p, digits=3){
-#   return(renderText({
-#     tnoend <- paste(sapply(loadings[1:(p-1)], function(x){
-#       sprintf(paste0('%.', digits, 'f'), x)}), collapse=", ")
-#     tend <- paste(sapply(loadings[p], function(x){
-#       sprintf(paste0('%.', digits, 'f'), x)}), collapse=", ")
-#     paste(loadtxt, tnoend," and ", tend, ".", sep="")
-#   }))
-# }
 
 #--------------------------------------------------------------------------------------------------------------------#
 # server code
@@ -260,7 +255,7 @@ server <- function(input, output, session) {
       output$table2 <- renderDataTable(datatable(table3f2,
                                                 # container = sketchThreeFactor,
                                                 colnames = paste0(rep("CL", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)),
-                                                caption = "All the cross-loadings generated",
+                                                caption = "All the cross-loadings",
                                                 options = list( scrollX = T, # to add a horizontal scroller in case of having a wide table
                                                                 dom = 't', # to hide the table's filer and search function
                                                                 ordering = F # to hide the ordering function
@@ -275,6 +270,27 @@ server <- function(input, output, session) {
       print(sparseMatrix(j = orders[,"col.dif1"], i = orders[,"row.dif1"], x = orders[,"cld"]))
       print("Dif2 Cross loading values")
       print(sparseMatrix(j = orders[,"col.dif2"], i = orders[,"row.dif2"], x = orders[,"cld"]))
+      
+      output$matrix <- renderUI({
+        withMathJax(
+        helpText(strong('Cross loadings are added in different orders as shown in the matrices below. Asterisks indicate main loadings.
+        Specific values of cross loadings with respect to the items and factors are printed in R console'),
+        br(),
+        'Same1: adding loading groups columnwisely
+            \\begin{pmatrix} *&3&5\\\\ 1& *&6\\\\ 2&4& *\\end{pmatrix}
+            Same2: adding loading group columnwisely until indicators of just 1 factor have been covered
+            \\begin{pmatrix}    *&5&3\\\\
+                                        1& *&6\\\\ 
+                                        4&2&* \\end{pmatrix}
+            Dffi1: adding loadings horizontally by row 
+            \\begin{pmatrix}     *&1&2\\\\
+                                        3& *&4\\\\ 
+                                        5&6&* \\end{pmatrix}
+            Dffi2: adding loadings individually to factor and then repeat 
+            \\begin{pmatrix}     *&5&3\\\\
+                                        1& *&6\\\\ 
+                                        4&2&* \\end{pmatrix}'))
+      })
       }
 
     
@@ -334,9 +350,7 @@ server <- function(input, output, session) {
     
     output$tabletext <- renderUI({
       HTML(paste(strong(em("Main loadings"))," for a ", numText, " are randomly generated." ,
-                 strong(em("Crossloadings"))," are randomly generated and added to the true modelm, one by one.",
-                 strong(em("Residual vairances: to 1st factor, then 2nd")),"means that when these loadings are added first to one factor." ,
-                 strong(em("Residual vairances: to alternating factor")), " means that when these loadings are added to alternating factors.")
+                 strong(em("Crossloadings"))," are randomly generated and added to the true model, one by one.")
       )
     })
   
