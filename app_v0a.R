@@ -7,8 +7,8 @@ library(Matrix)
 source("functions_app.R")
 
 
-set.seed(as.integer(Sys.time()))
-set.seed(123)
+# set.seed(as.integer(Sys.time()))
+# set.seed(123)
 #--------------------------------------------------------------------------------------------------------------------#
 # UI code
 
@@ -63,8 +63,11 @@ ui <- fluidPage(
 				 variances for negative values. Plots will be omitted for all such configurations."),  
       br(),br(), 
       
+
+      
       radioButtons("custom", "I would like to examine a ", 
                    c("Two factor model"="twoFactor","Three factor model"="threeFactor")),
+      
       
       
       conditionalPanel(
@@ -90,6 +93,9 @@ ui <- fluidPage(
         uiOutput("sliderange_cross3"), #CR
         
       ),
+      
+      radioButtons("isReproducible", "I would like the results to be",
+                   c("Reproducible"="reproduce","Random"="random")),
       
       actionButton("updateButton", "Compute fit index values!")
     ),
@@ -200,7 +206,10 @@ server <- function(input, output, session) {
     
     # runifRepeatable <- repeatable(runif)
 
-    set.seed(123)
+    if (input$isReproducible == "reproduce"){
+      set.seed(123)
+    }
+    
     
     genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch) 
     

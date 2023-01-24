@@ -34,3 +34,5 @@ OR maybe all three can be in one row, just small. Especially if hovering works, 
 [FIXED] 8. Plots are ugly. Lines should be thinner, dots should show actual data (see Bill's FMI app).
 
 9. Eventually, add the feature where the fitted model holds the factors to be orthogonal (I need to modify code here in the functions.R)
+
+10. Set seed for reproducibility

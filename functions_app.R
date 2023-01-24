@@ -1,4 +1,3 @@
-
 #R functions for app
 library(lavaan)
 # library(ggplot2)
@@ -37,6 +36,7 @@ model.3f<-function(p){
 #the matrix must have 1s on diagonal or else everything defaults to NA
 
 get.fits<-function(Sigmastar,lavmodel){
+
       p<-nrow(Sigmastar)
       colnames(Sigmastar)<-rownames(Sigmastar)<-paste0("x",1:p) 
       
