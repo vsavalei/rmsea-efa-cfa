@@ -6,6 +6,9 @@ library(shinybusy)
 library(Matrix)
 source("functions_app.R")
 
+
+set.seed(as.integer(Sys.time()))
+set.seed(123)
 #--------------------------------------------------------------------------------------------------------------------#
 # UI code
 
@@ -195,13 +198,13 @@ server <- function(input, output, session) {
                       twoFactor = "2-factor model",
                       threeFactor = "3-factor model")
     
+    # runifRepeatable <- repeatable(runif)
 
-    # loadtxt <- "The true model is a 2-factor model with the randomly generated main loadings of " 
-    genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch)
+    set.seed(123)
     
+    genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch) 
     
-    # loadtxt_cross <- "The randomly generated values of crossloadings to be added to the true model, one by one, are " 
-    numCrossLoading <- runif(numCrossLoadingSwitch, min=aveloading_crossSwitch -.5*range_crossSwitch, max=aveloading_crossSwitch+.5*range_crossSwitch)  #### CHANGED
+    numCrossLoading <- runif(numCrossLoadingSwitch, min=aveloading_crossSwitch -.5*range_crossSwitch, max=aveloading_crossSwitch+.5*range_crossSwitch)
     
     
     # Allow switching the main function between two-factor model and three-factor model
@@ -456,7 +459,7 @@ server <- function(input, output, session) {
                          color="Diff2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif2_f)))))+
 
-          geom_abline(color="grey",slope=0, intercept=0.90) +
+          geom_abline(color="grey",slope=0, intercept=0.08) +
           labs(color = "How crossloadings are added") +
           xlab("Number of crossloadings in the true model")+
           ylab("SRMR")+
@@ -728,4 +731,11 @@ server <- function(input, output, session) {
 } #end of server
 
 # start the app
+
+# set.seed(100)
+# cat(shiny:::seeds())
+# shinyApp(ui = ui, server = server) # Just quit the app after it starts
+# cat(shiny:::seeds())
+
+
 shinyApp(ui = ui, server = server)
