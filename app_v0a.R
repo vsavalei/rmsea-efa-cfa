@@ -26,7 +26,7 @@ js1 <- paste("function MRdoesOverlap() {",
 
 
 ui <- fluidPage(
-  tags$head(#tags$script(HTML(js1), type = "text/javascript"),#corrsponds js (for adjusting the overlapping anchors )
+  tags$head(tags$script(HTML(js1), type = "text/javascript"),#corrsponds js (for adjusting the overlapping anchors )
             
             tags$style(
               HTML(".shiny-notification {
@@ -281,7 +281,7 @@ server <- function(input, output, session) {
       output$matrix <- renderUI({
         withMathJax(
         helpText(strong('Cross loadings are added in different orders as shown in the matrices below. Asterisks indicate main loadings.
-        Specific values of cross loadings with respect to the items and factors are printed in R console'),
+        Specific values of cross loadings with respect to the items and factors are printed in R console.'),
         br(),
         'Same1: adding loading groups columnwisely
             \\begin{pmatrix} *&3&5\\\\ 1& *&6\\\\ 2&4& *\\end{pmatrix}
