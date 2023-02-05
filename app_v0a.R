@@ -7,8 +7,8 @@ library(Matrix)
 source("functions_app.R")
 
 
-# set.seed(as.integer(Sys.time()))
-# set.seed(123)
+set.seed(as.integer(Sys.time()))
+set.seed(123)
 #--------------------------------------------------------------------------------------------------------------------#
 # UI code
 
@@ -42,7 +42,6 @@ ui <- fluidPage(
               )
             )), 
 
-
   
   h1("SEM Fit Indices' Sensitivity to cross-loadings"),
   h4("How sensitive are RMSEA, CFI, and SRMR to omitted cross-loadings? This app will generate population covariance matrices 
@@ -63,18 +62,15 @@ ui <- fluidPage(
 				 variances for negative values. Plots will be omitted for all such configurations."),  
       br(),br(), 
       
-
-      
       radioButtons("custom", "I would like to examine a ", 
                    c("Two factor model"="twoFactor","Three factor model"="threeFactor")),
-      
       
       
       conditionalPanel(
         condition = "input.custom == 'twoFactor'",
         sliderInput("p2", "Total number of variables:", min=4, max=50, step=2, value=8), 
         
-        sliderInput("fcor2", "Factor correlation in the true model:", min=0, max=1, value=.2), 
+        sliderInput("fcor2", "Factor correlation in the true model:", value = 0, min= -1, max= 1, step=0.1), 
         sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange2"), #MR
         uiOutput("slidemax_cross2"), #CL
@@ -86,16 +82,13 @@ ui <- fluidPage(
         condition = "input.custom == 'threeFactor'",
         sliderInput("p3", "Total number of variables:", min=6, max=51, step=3, value=9), 
         
-        sliderInput("fcor3", "Factor correlation in the true model:", min=0, max=1, value=.2), 
+        sliderInput("fcor3", "Factor correlation in the true model:", value = 0, min= -1, max= 1, step=0.1),
         sliderInput("aveloading3", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange3"), #MR
         uiOutput("slidemax_cross3"), #CL
         uiOutput("sliderange_cross3"), #CR
         
       ),
-      
-      radioButtons("isReproducible", "I would like the results to be",
-                   c("Reproducible"="reproduce","Random"="random")),
       
       actionButton("updateButton", "Compute fit index values!")
     ),
@@ -204,12 +197,7 @@ server <- function(input, output, session) {
                       twoFactor = "2-factor model",
                       threeFactor = "3-factor model")
     
-    # runifRepeatable <- repeatable(runif)
-
-    if (input$isReproducible == "reproduce"){
-      set.seed(123)
-    }
-    
+    set.seed(123)
     
     genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch) 
     
