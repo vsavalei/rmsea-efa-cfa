@@ -38,8 +38,6 @@ ui <- fluidPage(
              "
               )
             )), 
-
-
   
   h1("SEM Fit Indices' Sensitivity to cross-loadings"),
   h4("How sensitive are RMSEA, CFI, and SRMR to omitted cross-loadings? This app will generate population covariance matrices 
@@ -123,6 +121,19 @@ server <- function(input, output, session) {
     sliderInput("aveloading_cross2", "Average Cross Loading (CL)", min = round((-sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2),2), 
                 max = round(min(1,(sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2)),2), 
                 round = -2, step = 0.01, value = .2) 
+  })
+  
+  observeEvent(input$aveloading_cross2, {
+    if(input$aveloading_cross2 < 0) {
+      showModal(
+        modalDialog(
+          title = "Warning",
+          "The Average Cross Loading (CL) is negative",
+          easyClose = TRUE,
+          footer = NULL
+        )
+      )
+    }
   })
   
   #for randomly generated factor loadings:
@@ -389,24 +400,28 @@ server <- function(input, output, session) {
         lowerbound_cfi = min(c(results$cfi_same1_f,results$cfi_same2_f,results$cfi_dif1_f,results$cfi_dif2_f,0.9))-0.005
 
         plot1 <- ggplot(data=results,aes(x=number_crossloadings)) +
-          geom_line(mapping = aes( y=rmsea_same1_f, color="Same1"))+
+          geom_line(mapping = aes( y=rmsea_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same1_f,
                          color="Same1",
+                         shape="Same1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same1_f)))))+
 
-          geom_line(mapping = aes( y=rmsea_same2_f, color="Same2"))+
+          geom_line(mapping = aes( y=rmsea_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same2_f,
                          color="Same2",
+                         shape="Same2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same2_f)))))+
 
-          geom_line(mapping = aes( y=rmsea_dif1_f, color="Alt1"))+
+          geom_line(mapping = aes( y=rmsea_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_dif1_f,
                          color="Alt1",
+                         shape="Alt1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif1_f)))))+
 
-          geom_line(mapping = aes( y=rmsea_dif2_f, color="Alt2"))+
+          geom_line(mapping = aes( y=rmsea_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_dif2_f,
                          color="Alt2",
+                         shape="Alt2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif2_f)))))+
           geom_abline(color="grey",slope=0, intercept=0.08) +
           labs(color = "Order") +
@@ -416,24 +431,26 @@ server <- function(input, output, session) {
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
 
         plot2 <- ggplot(data=results,aes(x=number_crossloadings)) +
-          geom_line(mapping = aes( y=cfi_same1_f, color="Same1"))+
+          geom_line(mapping = aes( y=cfi_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same1_f,
                          color="Same1",
+                         shape="Same1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_same1_f)))))+
 
-          geom_line(mapping = aes( y=cfi_same2_f, color="Same2"))+
+          geom_line(mapping = aes( y=cfi_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same2_f,
                          color="Same2",
+                         shape="Same2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_same2_f)))))+
 
-          geom_line(mapping = aes( y=cfi_dif1_f, color="Alt1"))+
+          geom_line(mapping = aes( y=cfi_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_dif1_f,
-                         color="Alt1",
+                         color="Alt1",shape="Alt1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif1_f)))))+
 
-          geom_line(mapping = aes( y=cfi_dif2_f, color="Alt2"))+
+          geom_line(mapping = aes( y=cfi_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_dif2_f,
-                         color="Alt2",
+                         color="Alt2",shape="Alt2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif2_f)))))+
 
           geom_abline(color="grey",slope=0, intercept=0.90) +
@@ -444,24 +461,25 @@ server <- function(input, output, session) {
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
 
         plot3 <- ggplot(data=results,aes(x=number_crossloadings)) +
-          geom_line(mapping = aes( y=srmr_same1_f, color="Same1"))+
+          geom_line(mapping = aes( y=srmr_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same1_f,
                          color="Same1",
+                         shape="Same1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_same1_f)))))+
 
-          geom_line(mapping = aes( y=srmr_same2_f, color="Same2"))+
+          geom_line(mapping = aes( y=srmr_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same2_f,
-                         color="Same2",
+                         color="Same2",shape="Same2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_same2_f)))))+
 
-          geom_line(mapping = aes( y=srmr_dif1_f, color="Alt1"))+
+          geom_line(mapping = aes( y=srmr_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_dif1_f,
-                         color="Alt1",
+                         color="Alt1", shape="Alt1",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif1_f)))))+
 
-          geom_line(mapping = aes( y=srmr_dif2_f, color="Alt2"))+
+          geom_line(mapping = aes( y=srmr_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_dif2_f,
-                         color="Alt2",
+                         color="Alt2",shape="Alt2",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif2_f)))))+
 
           geom_abline(color="grey",slope=0, intercept=0.08) +
@@ -469,7 +487,7 @@ server <- function(input, output, session) {
           xlab("Number of crossloadings in the true model")+
           ylab("SRMR")+
           ylim(NA,upperbound_srmr)
-        p3 <- ggplotly(plot3,tooltip = c("text"))  #%>% style(showlegend = FALSE)
+        p3 <- ggplotly(plot3,tooltip = c("text"))  
 
         subplot(
           p1,p2,p3,
@@ -510,7 +528,9 @@ server <- function(input, output, session) {
     }
     
     if (input$custom =="twoFactor"){
-      ##### THREE FACTOR MODEL SECTION 
+
+      ColorblindnessFriendlyValues <- c("Same" = "#648FFF", "Alternating" = "#FFB000")
+      
       output$plots <- renderPlotly({
         # compute the range for the plots 
         upperbound_rmsea = max(c(results$rmsea_same_f,results$rmsea_dif_f,0.08)) + 0.005
@@ -528,6 +548,7 @@ server <- function(input, output, session) {
           suppressWarnings(geom_point(aes(y=rmsea_dif_f,
                          color ="Alternating",
                          text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif_f)))))+
+          scale_color_manual(values = c("Same" = "#648FFF", "Alternating" = "#FFB000")) +  # set colors for factors
           geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "Order") +
           xlab("Number of crossloadings in the true model")+
           ylim(NA,upperbound_rmsea) 
@@ -547,6 +568,7 @@ server <- function(input, output, session) {
                          color="Alternating",
                          text = paste0("# of cross Loadings: ", number_crossloadings,
                                        "<br>CFI: ", sprintf('%.3f', cfi_dif_f)))))+
+          scale_color_manual(values = ColorblindnessFriendlyValues) + 
           geom_abline(color="grey",slope=0, intercept=0.90) + labs(color = "Order") +
           xlab("Number of crossloadings in the true model")+
           # ylab("CFI for the model with no crossloadings")+
@@ -565,6 +587,7 @@ server <- function(input, output, session) {
                          color="Alternating",
                          text = paste0("# of cross Loadings: ", number_crossloadings,
                                        "<br>SRMR: ", sprintf('%.3f', srmr_dif_f)))))+
+          scale_color_manual(values = ColorblindnessFriendlyValues) + 
           geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "Order") +
           xlab("Number of crossloadings in the true model")+
           # ylab("SRMR for the model with no crossloadings")+
@@ -609,138 +632,8 @@ server <- function(input, output, session) {
         
       })
     }
-    
-    
-    
-  }) # observeEvent(input$updateButton
-  
-  
-  
-  # 	
-  # 	# button pressed to update specified loadings
-  # 	observeEvent(input$updateButtonSpec,{
-  # 
-  # 		loadtxtspec <- "The specified loadings are " 
-  # 				
-  #  		# specLoadings <- # defaults: we need this before numP() is reset
-  # 		all <- rep(.5, numP())
-  # 		# check for custom values
-  # 		for(i in 1:(numP())){
-  # 			# eval parse is ugly, but see comments on slideload
-  # 			eval(parse(text=paste0("all[", i, "] <- input$load", i)))
-  # 		}
-  # 		
-  # 		specLoadingss <- all # defaults: we need this before numP() is reset
-  # 		
-  # 		#relss <- alpha.omega.pop(specLoadingss)
-  # 		
-  # 		output$printloadspec <- renderText({
-  # 				tnoend=paste(as.character(round(specLoadingss[1:(isolate(input$p2)-1)],3)), collapse=", ")
-  # 				tend=paste(as.character(round(specLoadingss[isolate(input$p2)],3)), collapse=", ")
-  # 				paste(loadtxtspec, tnoend," and ", tend, ".", sep="")
-  # 			})
-  # 		
-  # 		#define text for plot
-  # 		basictxt <- "The plot below varies the number of cross-loadings in the true model from 0 to p 
-  # 		(the number of variables) on the x-axis. On the y-axis is the RMSEA when a 2-factor model 
-  # 		with no cross-loadings is fit to the population covariance matrix 
-  # 		generated by the true model. The blue curves show the RMSEA values when the cross-loadings 
-  # 		are added to the first factor first (from 0 to p/2), and then to the 
-  # 		second factor (p/2+1 to p). The red curves show the RMSEA values when the cross-loadings 
-  # 		are adding to alternating factors."
-  # 
-  # 		output$plottextspec <- renderText({basictxt})
-  # 
-  # 		addtxt <- "Warning: these values of main loadings and cross-loadings are not very realistic!"
-  # 		
-  # 		if(input$p2<=pm){
-  # 			addtxt = paste0("Single-click on a linetype within the legend to remove/re-add the corresponding plot. ",
-  # 										"Double-click on a linetype to remove/re-add all other plots.")
-  # 		}  
-  # 
-  # 		output$plottextspecadd <- renderText({ 
-  # 			paste(duptxt, addtxt, sep="") 
-  # 		})
-  
-  
-  # 	#make plot
-  # 	#relspecx <- as.data.frame(alpha.omega.pop.varyl(specLoadingss)) 
-  # 	main.2f(p,fcor,l,cld)
-  # 	
-  # 	relspecx <- as.data.frame(alpha.omega.pop.varyl(specLoadingss)) 
-  # 	
-  # 	
-  # 	#set up stuff for plotting
-  # 	xsta <- relspecx$changing.loading
-  # 	ysta <- relspecx$omega.minus.alpha
-  # 	xend <- c(xsta[2:length(xsta)],NA)
-  # 	yend <- c(ysta[2:length(ysta)],NA)
-  # 
-  # 	gs <- nrow(relspecx)/input$p2 #gridsize, as set in alpha.omega.pop.varyl
-  # 	
-  # 	xend[seq(gs,nrow(relspecx),by=gs)]=xend[seq(gs,nrow(relspecx),by=gs)-1] 
-  # 	yend[seq(gs,nrow(relspecx),by=gs)]=yend[seq(gs,nrow(relspecx),by=gs)-1] 
-  # 
-  # 	dimrel <- dim(relspecx)[1]
-  # 	
-  # 	for(i in 1:(numP())){
-  # 		addme=c(alpha.omega.pop(specLoadingss)$alpha,
-  # 						alpha.omega.pop(specLoadingss)$omega,
-  # 						t(specLoadingss),99,
-  # 						alpha.omega.pop(specLoadingss)$omina,i,
-  # 						t(specLoadingss[i]))
-  # 		relspecx=rbind(relspecx,addme)    
-  # 	}
-  # 	dimrel2 <- dim(relspecx)[1]
-  # 
-  # 	#plot difference vs varing loading
-  # 	output$plotspec <- renderPlotly({  
-  # 
-  # 		plt <- ggplot(data=relspecx[1:dimrel,],
-  # 							aes(text = paste("omega = ",round(omega,digits=3),
-  # 															"<br>alpha = ",round(alpha,digits=3),
-  # 															paste0("<br>alpha underestimates omega by ", round(omega-alpha,digits=3),", or ",
-  # 																ifelse(omega-alpha==0, 0, round((omega-alpha)*100/omega,digits=2)),"%"),
-  # 															paste0("<br>changing loading value (loading ", which.l, ") = ",
-  # 																round(changing.loading,digits=2))
-  # 						))) +
-  # 				geom_segment(data=relspecx[1:dimrel,],
-  # 						aes(x=-1, xend=-1, y=0, yend=0, linetype=as.factor(which.l)), color='black') + xlim(0,1) + #hack for solving ggplotly legend color issue
-  # 				geom_segment(data=relspecx[1:dimrel,],
-  # 						aes(x=changing.loading, xend=xend, y=omega.minus.alpha, yend=yend,
-  # 							linetype=as.factor(which.l), colour=omega)) +    
-  # 				geom_point(data=relspecx[(dimrel+1):dimrel2,],
-  # 						aes(x=changing.loading, y=omega.minus.alpha), colour= "blue") +
-  # 				xlab("Changing loading value") + ylab("Difference between omega and alpha") +
-  # 				scale_color_gradient2(name="omega",midpoint=.5,low="lightpink", mid="salmon",high="blue") +
-  # 				theme(legend.title = element_blank())
-  # 		
-  # 		if (isolate(input$p2)<=pm){ # show linetype legend
-  # 			plt <- ggplotly(plt,tooltip = c("text")) %>%
-  # 					add_annotations(text="changing loading",  xref="paper", yref="paper",
-  # 						x=0.15, xanchor="right", 
-  # 						y=-.3, yanchor="bottom",    
-  # 						legendtitle=TRUE, showarrow=FALSE) %>% 
-  # 					layout(legend = list(orientation = "h", yanchor="bottom", xanchor="left",y = -.4, x =0.15))
-  # 		} else { # hide linetype legend
-  # 			plt <- ggplotly(plt,tooltip = c("text")) %>% 
-  # 					layout(showlegend = FALSE) 
-  # 		}
-  # 	})
-  # 
-  
-  #}) # closes observeEvent(input$updateButtonSpec  
-  
-  
-  
-} #end of server
-
-# start the app
-
-# set.seed(100)
-# cat(shiny:::seeds())
-# shinyApp(ui = ui, server = server) # Just quit the app after it starts
-# cat(shiny:::seeds())
+  }) 
+}
 
 
 shinyApp(ui = ui, server = server)
