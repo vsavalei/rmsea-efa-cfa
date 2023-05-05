@@ -128,7 +128,7 @@ server <- function(input, output, session) {
       showModal(
         modalDialog(
           title = "Warning",
-          "The Average Cross Loading (CL) is negative",
+          "You’re allowing negative crossloadings!",
           easyClose = TRUE,
           footer = NULL
         )
