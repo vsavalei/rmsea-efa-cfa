@@ -70,20 +70,22 @@ ui <- fluidPage(
         sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange2"), #MR
         uiOutput("slidemax_cross2"), #CL
+        uiOutput(outputId = "warningNegativeCL"),
         uiOutput("sliderange_cross2"), #CR
-        
+        uiOutput(outputId = "warningCRgreaterCL")
       ),
       
       conditionalPanel(
         condition = "input.custom == 'threeFactor'",
         sliderInput("p3", "Total number of variables:", min=6, max=51, step=3, value=9), 
         
-        sliderInput("fcor3", "Factor correlation in the true model:", min=0, max=1, value=.2), 
+        sliderInput("fcor3", "Factor correlation in the true model:", min=-1, max=1, value=.2), # Karyn May 6th: changed min from 0 to -1 
         sliderInput("aveloading3", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange3"), #MR
         uiOutput("slidemax_cross3"), #CL
-        uiOutput("sliderange_cross3"), #CR
-        
+        # uiOutput(outputId = "warningNegativeCL"),
+        uiOutput("sliderange_cross3") #CR
+        # uiOutput(outputId = "negativeCL"),warningCR > CL 
       ),
       
       actionButton("updateButton", "Compute fit index values!")
@@ -118,30 +120,18 @@ server <- function(input, output, session) {
   #define input sliders for TWO factor model
   #Vika change 2/40/2023: added min below (before was 0), changed max to not exceed 1
   output$slidemax_cross2 <- renderUI({
-    sliderInput("aveloading_cross2", "Average Cross Loading (CL)", min = round((-sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2),2), 
-                max = round(min(1,(sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2)),2), 
+    sliderInput("aveloading_cross2", "Average Cross Loading (CL)", 
+                min = round((-sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2),2), 
+                max = round(
+                  min(1, (sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2))
+                  ,2), 
                 round = -2, step = 0.01, value = .2) 
   })
   
-  # observeEvent(input$aveloading_cross2, {
-  #   if(input$aveloading_cross2 < 0) {
-  #     showModal(
-  #       modalDialog(
-  #         title = "Warning",
-  #         "You’re allowing negative crossloadings!",
-  #         easyClose = TRUE,
-  #         footer = NULL
-  #       )
-  #     )
-  #   }
-  # })
-  
-  #for randomly generated factor loadings:
   output$sliderange2 <- renderUI({
     sliderInput("range2", "Main Loadings Range (MR)", min = 0, max = round((min(2*input$aveloading2, 2*(1-input$aveloading2))),2), 
                 value = min(.1,input$aveloading2, (1-input$aveloading2)), round = -3, step = 0.01) 
   })
-  
   #for randomly generated factor cross-loadings:
   
   #vika 2/5/2023: In the min(1,2*input$aveloading_cross2,...), replace 1 with 2, 
@@ -158,12 +148,12 @@ server <- function(input, output, session) {
   })
   
   
-  
   #define input sliders for THREE factor model
   output$slidemax_cross3 <- renderUI({
-    sliderInput("aveloading_cross3", "Average Cross Loading (CL)", min = 0, 
+    sliderInput("aveloading_cross3", "Average Cross Loading (CL)", 
+                min = round((-sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)-input$fcor3*input$aveloading3),2), 
                 max = round((sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)-input$fcor3*input$aveloading3),2), 
-                round = -2, step = 0.01, value = .2) 
+                round = -2, step = 0.01, value = .2)
   })
   
   #for randomly generated factor loadings:
@@ -172,13 +162,31 @@ server <- function(input, output, session) {
                 value = min(.1,input$aveloading3, (1-input$aveloading3)), round = -3, step = 0.01) 
   })
   
-  #for randomly generated factor cross-loadings:
+  #for randomly generated factor cross-loadings:  # Karyn May 6th
   output$sliderange_cross3 <- renderUI({
     sliderInput("range_cross3", "Cross-Loadings Range (CR)", 
                 min = 0, 
-                max = round(min(1,2*input$aveloading_cross3,  
-                                2*(sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)-input$fcor3*input$aveloading3-input$aveloading_cross3)),2), 
+                max = round(min(2,
+                                2*abs(-sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)
+                                      -input$fcor3*input$aveloading3-input$aveloading_cross3),  
+                                2*(sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)
+                                   -input$fcor3*input$aveloading3-input$aveloading_cross3)),2), 
                 value = min(0,input$input$aveloading_cross3, (1-input$input$aveloading_cross3)), round = -2, step = 0.01) 
+  })
+  
+  output$warningNegativeCL  <- renderUI({
+    if(input$aveloading_cross2 < 0 | input$aveloading_cross3 < 0) {
+      tagList(
+        tags$p("Warning: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
+      )
+    }
+  })
+  output$warningCRgreaterCL <- renderUI({
+    if((input$range_cross2 > 2* input$aveloading_cross2) & (input$aveloading_cross2 >= 0 )) {
+      tagList(
+        tags$p("Warning: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
+      )
+    }
   })
   
   observeEvent(input$updateButton,{      
@@ -341,8 +349,8 @@ server <- function(input, output, session) {
         round(genResiduals_alt, 3)
       ))
       
-      row.names(table2f1) <- c("Main loadings","Cross loadings","Residual vairances")
-      row.names(table2f2) <- c("Main loadings","Cross loadings","Residual vairances")
+      row.names(table2f1) <- c("Main loadings","Cross loadings","Residual variances")
+      row.names(table2f2) <- c("Main loadings","Cross loadings","Residual variances")
       
       # Render the first data table 
       output$table <- renderDataTable(
@@ -627,8 +635,7 @@ server <- function(input, output, session) {
               xanchor = "center",  
               yanchor = "bottom",  
               showarrow = FALSE 
-            ) ))
-        
+            )))
       })
     }
   }) 
