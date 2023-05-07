@@ -70,9 +70,9 @@ ui <- fluidPage(
         sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange2"), #MR
         uiOutput("slidemax_cross2"), #CL
-        uiOutput(outputId = "warningNegativeCL"),
+        uiOutput(outputId = "warningNegativeCL2"),
         uiOutput("sliderange_cross2"), #CR
-        uiOutput(outputId = "warningCRgreaterCL")
+        uiOutput(outputId = "warningCRgreaterCL2")
       ),
       
       conditionalPanel(
@@ -83,9 +83,9 @@ ui <- fluidPage(
         sliderInput("aveloading3", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange3"), #MR
         uiOutput("slidemax_cross3"), #CL
-        # uiOutput(outputId = "warningNegativeCL"),
-        uiOutput("sliderange_cross3") #CR
-        # uiOutput(outputId = "negativeCL"),warningCR > CL 
+        uiOutput(outputId = "warningNegativeCL3"),
+        uiOutput("sliderange_cross3"), #CR
+        uiOutput(outputId = "warningCRgreaterCL3")
       ),
       
       actionButton("updateButton", "Compute fit index values!")
@@ -141,7 +141,7 @@ server <- function(input, output, session) {
                 min = 0, 
                 max = round(min(2,
                                 2*abs(-sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)
-                                        -input$fcor2*input$aveloading2-input$aveloading_cross2),  
+                                      -input$fcor2*input$aveloading2-input$aveloading_cross2),  
                                 2*(sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)
                                    -input$fcor2*input$aveloading2-input$aveloading_cross2)),2), 
                 value = min(0,input$input$aveloading_cross2, (1-input$input$aveloading_cross2)), round = -2, step = 0.01) 
@@ -174,15 +174,30 @@ server <- function(input, output, session) {
                 value = min(0,input$input$aveloading_cross3, (1-input$input$aveloading_cross3)), round = -2, step = 0.01) 
   })
   
-  output$warningNegativeCL  <- renderUI({
-    if(input$aveloading_cross2 < 0 | input$aveloading_cross3 < 0) {
+  output$warningNegativeCL2  <- renderUI({
+    if(input$aveloading_cross2 < 0) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
       )
     }
   })
-  output$warningCRgreaterCL <- renderUI({
+  output$warningCRgreaterCL2 <- renderUI({
     if((input$range_cross2 > 2* input$aveloading_cross2) & (input$aveloading_cross2 >= 0 )) {
+      tagList(
+        tags$p("Warning: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
+      )
+    }
+  })
+  
+  output$warningNegativeCL3 <- renderUI({
+    if(input$aveloading_cross3 < 0) {
+      tagList(
+        tags$p("Warning: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
+      )
+    }
+  })
+  output$warningCRgreaterCL3 <- renderUI({
+    if((input$range_cross3 > 2* input$aveloading_cross3) & (input$aveloading_cross3 >= 0 )) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
       )
@@ -275,7 +290,7 @@ server <- function(input, output, session) {
       
       table3f2 <- as.data.frame(t(round(numCrossLoading, 3)))
       row.names(table3f2) <- c("Cross loading values")
-    
+      
       
       output$table <- renderDataTable(datatable(table3f1,
                                                 # container = sketchThreeFactor,
@@ -542,7 +557,7 @@ server <- function(input, output, session) {
         # compute the range for the plots 
         upperbound_rmsea = max(c(results$rmsea_same_f,results$rmsea_dif_f,0.08)) + 0.005
         upperbound_srmr = max(c(results$srmr_same_f,results$srmr_dif_f,0.08)) + 0.005
-        lowerbound_cfi = min(c(results$cfi_same_f,results$cfi_dif_f,0.9))-0.005
+        lowerbound_cfi = min(c(results$cfi_same_f,results$cfi_dif_f,0.9)) - 0.005
         
         plot1 <- ggplot(data=results,aes(x=number_crossloadings))+ 
           geom_line(aes(y=rmsea_same_f,
