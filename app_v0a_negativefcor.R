@@ -475,7 +475,7 @@ server <- function(input, output, session) {
                                           color="Alt2",shape="Alt2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif2_f)))))+
           
-          geom_abline(color="grey",slope=0, intercept=0.90) +
+          geom_abline(color="grey",slope=0, intercept=0.95) +
           labs(color = "Order") +
           xlab("Number of crossloadings in the true model")+
           ylab("CFI")+
@@ -565,7 +565,6 @@ server <- function(input, output, session) {
           suppressWarnings(geom_point(aes(y=rmsea_same_f,
                                           color="Same",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same_f)))))+
-          
           geom_line(aes(y=rmsea_dif_f,color ="Alternating"))+
           suppressWarnings(geom_point(aes(y=rmsea_dif_f,
                                           color ="Alternating",
@@ -574,7 +573,6 @@ server <- function(input, output, session) {
           geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "Order") +
           xlab("Number of crossloadings in the true model")+
           ylim(NA,upperbound_rmsea) 
-        
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot2 <- ggplot(data=results, aes(x=number_crossloadings))+ 
@@ -591,9 +589,8 @@ server <- function(input, output, session) {
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>CFI: ", sprintf('%.3f', cfi_dif_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues) + 
-          geom_abline(color="grey",slope=0, intercept=0.90) + labs(color = "Order") +
+          geom_abline(color="grey",slope=0, intercept=0.95) + labs(color = "Order") +
           xlab("Number of crossloadings in the true model")+
-          # ylab("CFI for the model with no crossloadings")+
           ylim(lowerbound_cfi,NA)
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
@@ -612,7 +609,6 @@ server <- function(input, output, session) {
           scale_color_manual(values = ColorblindnessFriendlyValues) + 
           geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "Order") +
           xlab("Number of crossloadings in the true model")+
-          # ylab("SRMR for the model with no crossloadings")+
           ylim(NA,upperbound_srmr)
         p3 <- ggplotly(plot3,tooltip = c("text"))
         
