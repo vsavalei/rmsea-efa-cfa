@@ -314,24 +314,22 @@ server <- function(input, output, session) {
       
       output$matrix <- renderUI({
         withMathJax(
-          helpText(strong('Cross loadings are added in different orders as shown in the matrices below. Asterisks indicate main loadings.
-        Specific values of cross loadings with respect to the items and factors are printed in R console.'),
-                   br(),
-                   'Same1: adding loading groups columnwisely
-            \\begin{pmatrix} *&3&5\\\\ 1& *&6\\\\ 2&4& *\\end{pmatrix}
-            Same2: adding loading group columnwisely until indicators of just 1 factor have been covered
-            \\begin{pmatrix}    *&5&3\\\\
-                                        1& *&6\\\\ 
-                                        4&2&* \\end{pmatrix}
-            Dffi1: adding loadings horizontally by row 
-            \\begin{pmatrix}     *&1&2\\\\
-                                        3& *&4\\\\ 
-                                        5&6&* \\end{pmatrix}
-            Dffi2: adding loadings individually to factor and then repeat 
-            \\begin{pmatrix}     *&5&3\\\\
-                                        1& *&6\\\\ 
-                                        4&2&* \\end{pmatrix}'))
+          helpText(
+            strong('Cross loadings are added in different orders as shown in the matrices below.'), 
+            'Asterisks indicate main loadings, and the numbers indicate blocks of cross-loadings.
+        Specific values of cross loadings with respect to the items and factors are printed in R console.',
+            '\\begin{pmatrix}     *&1&2\\\\
+                                3& *&4\\\\ 
+                              5&6&* \\end{pmatrix}',
+            HTML("<p>In “Same 1” order, cross-loadings are added column-wise, until each factor reflects all other indicators; blocks are completely filled in in the following order: 3, 5, 1, 6, 2, 4.</p>"),
+            HTML("<p>In “Same 2” order, cross-loadings are added until a factor covers indicators of just one other factor before moving on to the next factor; blocks are completely filled in in the following order: 3, 6, 2, 5, 1, 4.</p>"),
+            HTML("<p>In “Alternating 1” order, loadings are added row-wise, first alternating between blocks 1 and 2 until they are saturated, then between blocks 3 and 4 until they are saturated, then between blocks 5 and 6.</p>"),
+            HTML("<p>In “Alternating 2” order, one cross-loading is added to each block, and then the cycle is repeated, so that no block gets saturated with cross-loadings until the very end of the series.</p>")
+          )
+        )
       })
+      
+      
     }
     
     if (input$custom =="twoFactor"){
@@ -455,7 +453,8 @@ server <- function(input, output, session) {
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           # labs(color = "Order") +
           ylab("RMSEA")+
-          ylim(NA,upperbound_rmsea)
+          ylim(NA,upperbound_rmsea)+
+          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot2 <- ggplot(data=results,aes(x=number_crossloadings)) +
@@ -487,7 +486,8 @@ server <- function(input, output, session) {
           geom_abline(color="grey",slope=0, intercept=0.95) +
           # labs(color = "Order") +
           ylab("CFI")+
-          ylim(lowerbound_cfi,NA)
+          ylim(lowerbound_cfi,NA)+
+          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot3 <- ggplot(data=results,aes(x=number_crossloadings)) +
@@ -515,12 +515,12 @@ server <- function(input, output, session) {
                                           color="Alt2",
                                           # shape="Alt2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif2_f)))))+
-          
           geom_abline(color="grey",slope=0, intercept=0.08) +
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           labs(color = "Order") +
           ylab("SRMR")+
-          ylim(NA,upperbound_srmr)
+          ylim(NA,upperbound_srmr)+
+          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
         p3 <- ggplotly(plot3,tooltip = c("text"))  
         
         subplot(
@@ -596,7 +596,8 @@ server <- function(input, output, session) {
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +
           # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
           geom_abline(color="grey",slope=0, intercept=0.08) +
-          ylim(NA,upperbound_rmsea)
+          ylim(NA,upperbound_rmsea) +
+          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
         
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
@@ -643,7 +644,8 @@ server <- function(input, output, session) {
           # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
           geom_abline(color="grey",slope=0, intercept=0.08) + 
           labs(color = "Order") +
-          ylim(NA,upperbound_srmr) 
+          ylim(NA,upperbound_srmr) +
+          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
         
         p3 <- ggplotly(plot3,tooltip = c("text"))
         
