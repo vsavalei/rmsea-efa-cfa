@@ -173,7 +173,7 @@ server <- function(input, output, session) {
                                    -input$fcor3*input$aveloading3-input$aveloading_cross3)),2), 
                 value = min(0,input$input$aveloading_cross3, (1-input$input$aveloading_cross3)), round = -2, step = 0.01) 
   })
-  
+  # Attention: this is producing a warning message. Fix it later
   output$warningNegativeCL2  <- renderUI({
     if(input$aveloading_cross2 < 0) {
       tagList(
@@ -413,8 +413,10 @@ server <- function(input, output, session) {
 	          You can hover over the curve to get specific fit index values.", sep="") 
     })
     
-    
     if (input$custom =="threeFactor"){
+      
+      ColorblindnessFriendlyValues4 <- c("Same1" = "#648FFF", "Same2" = "#D81B60", "Alt1" = "#FFB000", "Alt2" = "#004D40")
+      
       output$plots <- renderPlotly({
         
         upperbound_rmsea = max(c(results$rmsea_same1_f,results$rmsea_dif1_f,results$rmsea_same2_f,results$rmsea_dif2_f,0.08)) + 0.005
@@ -425,29 +427,29 @@ server <- function(input, output, session) {
           geom_line(mapping = aes( y=rmsea_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same1_f,
                                           color="Same1",
-                                          shape="Same1",
+                                          # shape="Same1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same1_f)))))+
           
           geom_line(mapping = aes( y=rmsea_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same2_f,
                                           color="Same2",
-                                          shape="Same2",
+                                          # shape="Same2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same2_f)))))+
           
           geom_line(mapping = aes( y=rmsea_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_dif1_f,
                                           color="Alt1",
-                                          shape="Alt1",
+                                          # shape="Alt1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif1_f)))))+
           
           geom_line(mapping = aes( y=rmsea_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_dif2_f,
                                           color="Alt2",
-                                          shape="Alt2",
+                                          # shape="Alt2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif2_f)))))+
           geom_abline(color="grey",slope=0, intercept=0.08) +
-          labs(color = "Order") +
-          xlab("Number of crossloadings in the true model")+
+          scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
+          # labs(color = "Order") +
           ylab("RMSEA")+
           ylim(NA,upperbound_rmsea)
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
@@ -456,28 +458,29 @@ server <- function(input, output, session) {
           geom_line(mapping = aes( y=cfi_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same1_f,
                                           color="Same1",
-                                          shape="Same1",
+                                          # shape="Same1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_same1_f)))))+
           
           geom_line(mapping = aes( y=cfi_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same2_f,
                                           color="Same2",
-                                          shape="Same2",
+                                          # shape="Same2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_same2_f)))))+
           
           geom_line(mapping = aes( y=cfi_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_dif1_f,
-                                          color="Alt1",shape="Alt1",
+                                          color="Alt1",
+                                          # shape="Alt1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif1_f)))))+
           
           geom_line(mapping = aes( y=cfi_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_dif2_f,
-                                          color="Alt2",shape="Alt2",
+                                          color="Alt2",
+                                          # shape="Alt2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif2_f)))))+
-          
+          scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           geom_abline(color="grey",slope=0, intercept=0.95) +
-          labs(color = "Order") +
-          xlab("Number of crossloadings in the true model")+
+          # labs(color = "Order") +
           ylab("CFI")+
           ylim(lowerbound_cfi,NA)
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
@@ -486,27 +489,30 @@ server <- function(input, output, session) {
           geom_line(mapping = aes( y=srmr_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same1_f,
                                           color="Same1",
-                                          shape="Same1",
+                                          # shape="Same1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_same1_f)))))+
           
           geom_line(mapping = aes( y=srmr_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same2_f,
-                                          color="Same2",shape="Same2",
+                                          color="Same2",
+                                          # shape="Same2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_same2_f)))))+
           
           geom_line(mapping = aes( y=srmr_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_dif1_f,
-                                          color="Alt1", shape="Alt1",
+                                          color="Alt1",
+                                          # shape="Alt1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif1_f)))))+
           
           geom_line(mapping = aes( y=srmr_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_dif2_f,
-                                          color="Alt2",shape="Alt2",
+                                          color="Alt2",
+                                          # shape="Alt2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif2_f)))))+
           
           geom_abline(color="grey",slope=0, intercept=0.08) +
+          scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           labs(color = "Order") +
-          xlab("Number of crossloadings in the true model")+
           ylab("SRMR")+
           ylim(NA,upperbound_srmr)
         p3 <- ggplotly(plot3,tooltip = c("text"))  
@@ -537,7 +543,7 @@ server <- function(input, output, session) {
               showarrow = FALSE
             ),
             list(
-              x = 0.85,
+              x = 0.84,
               y = 1,
               text = "SRMR",
               xref = "paper",
@@ -551,7 +557,7 @@ server <- function(input, output, session) {
     
     if (input$custom =="twoFactor"){
       
-      ColorblindnessFriendlyValues <- c("Same" = "#648FFF", "Alternating" = "#FFB000")
+      ColorblindnessFriendlyValues2 <- c("Same" = "#648FFF", "Alt" = "#FFB000")
       
       output$plots <- renderPlotly({
         # compute the range for the plots 
@@ -559,57 +565,79 @@ server <- function(input, output, session) {
         upperbound_srmr = max(c(results$srmr_same_f,results$srmr_dif_f,0.08)) + 0.005
         lowerbound_cfi = min(c(results$cfi_same_f,results$cfi_dif_f,0.9)) - 0.005
         
+        # ensure the x-axis only has whole number 
+        if ((max(results$number_crossloadings) < 6)){
+          step_tick <- 1
+        } else if (max(results$number_crossloadings) %% 4 == 0) {
+          step_tick <- floor(max(results$number_crossloadings)/ 4)
+        } else {
+          step_tick <- floor(max(results$number_crossloadings)/ 3)
+        } 
+            
         plot1 <- ggplot(data=results,aes(x=number_crossloadings))+ 
+          scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(aes(y=rmsea_same_f,
                         color="Same"))+ 
           suppressWarnings(geom_point(aes(y=rmsea_same_f,
                                           color="Same",
+                                          # shape = "Same",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same_f)))))+
-          geom_line(aes(y=rmsea_dif_f,color ="Alternating"))+
+          geom_line(aes(y=rmsea_dif_f,color ="Alt"))+
           suppressWarnings(geom_point(aes(y=rmsea_dif_f,
-                                          color ="Alternating",
+                                          color ="Alt",
+                                          # shape = "Alt",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif_f)))))+
-          scale_color_manual(values = c("Same" = "#648FFF", "Alternating" = "#FFB000")) +  # set colors for factors
-          geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "Order") +
-          xlab("Number of crossloadings in the true model")+
-          ylim(NA,upperbound_rmsea) 
+          scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +
+          # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
+          geom_abline(color="grey",slope=0, intercept=0.08) +
+          ylim(NA,upperbound_rmsea)
+        
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot2 <- ggplot(data=results, aes(x=number_crossloadings))+ 
+          scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(aes(y=cfi_same_f,
                         color="Same"))+ 
           suppressWarnings(geom_point(aes(y=cfi_same_f,
                                           color="Same",
+                                          # shape = "Same",
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>CFI: ", sprintf('%.3f', cfi_same_f)))))+
           geom_line(aes(y=cfi_dif_f, 
-                        color="Alternating"))+ 
+                        color="Alt"))+ 
           suppressWarnings(geom_point(aes(y=cfi_dif_f,
-                                          color="Alternating",
+                                          color="Alt",
+                                          # shape = "Alt",
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>CFI: ", sprintf('%.3f', cfi_dif_f)))))+
-          scale_color_manual(values = ColorblindnessFriendlyValues) + 
-          geom_abline(color="grey",slope=0, intercept=0.95) + labs(color = "Order") +
-          xlab("Number of crossloadings in the true model")+
+          scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
+          # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
+          geom_abline(color="grey",slope=0, intercept=0.95) + 
           ylim(lowerbound_cfi,NA)
+        
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot3 <- ggplot(data=results, aes(x=number_crossloadings))+ 
+          scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(aes(y=srmr_same_f,
                         color="Same"))+ 
-          geom_line(aes(y=srmr_dif_f,color="Alternating"))+ 
+          geom_line(aes(y=srmr_dif_f,color="Alt"))+ 
           suppressWarnings(geom_point(aes(y=srmr_same_f,
                                           color="Same",
+                                          # shape = "Same",
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>SRMR: ", sprintf('%.3f', srmr_same_f)))))+
           suppressWarnings(geom_point(aes(y=srmr_dif_f,
-                                          color="Alternating",
+                                          color="Alt",
+                                          # shape = "Alt",
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>SRMR: ", sprintf('%.3f', srmr_dif_f)))))+
-          scale_color_manual(values = ColorblindnessFriendlyValues) + 
-          geom_abline(color="grey",slope=0, intercept=0.08) + labs(color = "Order") +
-          xlab("Number of crossloadings in the true model")+
-          ylim(NA,upperbound_srmr)
+          scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
+          # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
+          geom_abline(color="grey",slope=0, intercept=0.08) + 
+          labs(color = "Order") +
+          ylim(NA,upperbound_srmr) 
+        
         p3 <- ggplotly(plot3,tooltip = c("text"))
         
         subplot(
