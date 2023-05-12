@@ -58,7 +58,7 @@ ui <- fluidPage(
       
       conditionalPanel(
         condition = "input.custom == 'twoFactor'",
-        sliderInput("p2", "Total number of variables:", min=4, max=50, step=2, value=8), 
+        sliderInput("p2", "Total number of variables:", min=4, max=50, step=2, value=4), 
         #Vika added 2/5/2023: min=-1 i/0 0
         sliderInput("fcor2", "Factor correlation in the true model:", min=-1, max=1, value=.2, step=.05), 
         sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
@@ -410,7 +410,7 @@ server <- function(input, output, session) {
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
           # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
           geom_abline(color="grey",slope=0, intercept=0.08) + 
-          labs(color = "Order") 
+          labs(color = "Order") + theme(legend.position = c(0.8, 0.2))
         
         p3 <- ggplotly(plot3,tooltip = c("text"))
         
@@ -418,7 +418,13 @@ server <- function(input, output, session) {
           p1,p2,p3,
           nrows = 1
         ) %>%
-          layout(annotations = layout_3_figs)
+          layout(annotations = layout_3_figs)%>%
+          layout(legend = list(orientation="h",
+                               entrywidth=70,
+                               yanchor="bottom",
+                               y=4,
+                               xanchor="right",
+                               x=1))            
       })
     }
     
@@ -599,7 +605,13 @@ server <- function(input, output, session) {
           labs(color = "Order") +
           ylab("SRMR")
         
-        p3 <- ggplotly(plot3,tooltip = c("text"))  
+        p3 <- ggplotly(plot3,tooltip = c("text"))  %>%
+          layout(legend = list(orientation="h",
+                               entrywidth=70,
+                               yanchor="bottom",
+                               y=4,
+                               xanchor="right",
+                               x=1)) 
         
         subplot(
           p1,p2,p3,
@@ -612,33 +624,30 @@ server <- function(input, output, session) {
     # Managing the layout of three figures 
     layout_3_figs <- list(
       list(
-        x = 0.151,
-        y = 1.0,
+        x= -0.005,
+        y =1.05,
+        xanchor="left",
         text = "RMSEA",
         xref = "paper",
         yref = "paper",
-        xanchor = "center",
-        yanchor = "bottom",
         showarrow = FALSE
       ),
       list(
-        x = 0.5,
-        y = 1,
+        x = 0.35,
+        y = 1.05,
         text = "CFI",
         xref = "paper",
         yref = "paper",
-        xanchor = "center",
-        yanchor = "bottom",
+        xanchor="left",
         showarrow = FALSE
       ),
       list(
-        x = 0.84,
-        y = 1,
+        x = 0.68,
+        y = 1.05,
         text = "SRMR",
         xref = "paper",
         yref = "paper",
-        xanchor = "center",
-        yanchor = "bottom",
+        xanchor="left",
         showarrow = FALSE
       ) )
   }) 
