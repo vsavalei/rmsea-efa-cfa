@@ -58,27 +58,29 @@ ui <- fluidPage(
       
       conditionalPanel(
         condition = "input.custom == 'twoFactor'",
-        sliderInput("p2", "Total number of variables:", min=4, max=50, step=2, value=4), 
+        sliderInput("p2", "Total number of variables:", min=4, max=50, step=2, value=6), 
+        uiOutput(outputId = "warningLargeP2"),
         #Vika added 2/5/2023: min=-1 i/0 0
         sliderInput("fcor2", "Factor correlation in the true model:", min=-1, max=1, value=.2, step=.05), 
         sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange2"), #MR
         uiOutput("slidemax_cross2"), #CL
-        suppressWarnings(uiOutput(outputId = "warningNegativeCL2")),
+        uiOutput(outputId = "warningNegativeCL2"),
         uiOutput("sliderange_cross2"), #CR
-        suppressWarnings(uiOutput(outputId = "warningCRgreaterCL2"))
+        uiOutput(outputId = "warningCRgreaterCL2")
       ),
       
       conditionalPanel(
         condition = "input.custom == 'threeFactor'",
         sliderInput("p3", "Total number of variables:", min=6, max=51, step=3, value=9), 
+        uiOutput(outputId = "warningLargeP3"),
         # Karyn May 6th: changed min from 0 to -1 
         sliderInput("fcor3", "Factor correlation in the true model:", min=-1, max=1, value=.2, step=.05), 
         sliderInput("aveloading3", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange3"), #MR
         uiOutput("slidemax_cross3"), #CL
-        suppressWarnings(uiOutput(outputId = "warningNegativeCL3")),
-        suppressWarnings(uiOutput("sliderange_cross3")), #CR
+        uiOutput(outputId = "warningNegativeCL3"),
+        uiOutput("sliderange_cross3"), #CR
         uiOutput(outputId = "warningCRgreaterCL3")
       ),
       
@@ -125,7 +127,6 @@ server <- function(input, output, session) {
     sliderInput("range2", "Main Loadings Range (MR)", min = 0, max = round((min(2*input$aveloading2, 2*(1-input$aveloading2))),2), 
                 value = min(.1,input$aveloading2, (1-input$aveloading2)), round = -3, step = 0.01) 
   })
-  #for randomly generated factor cross-loadings:
   
   #vika 2/5/2023: In the min(1,2*input$aveloading_cross2,...), replace 1 with 2, 
   #and the second term with its generalized version 
@@ -166,33 +167,48 @@ server <- function(input, output, session) {
                                    -input$fcor3*input$aveloading3-input$aveloading_cross3)),2), 
                 value = min(0,input$input$aveloading_cross3, (1-input$input$aveloading_cross3)), round = -2, step = 0.01) 
   })
-  # Attention: this is producing a warning message. Fix it later
+  
+  # show warning message when p is large 
+  output$warningLargeP2  <- renderUI({
+    if(input$p2 > 20) {
+      tagList(
+        tags$p("Notice: The computation may take up to several minutes due to large model size.", style = "color: black;")
+      )
+    }
+  })
+  output$warningLargeP3  <- renderUI({
+    if(input$p3 > 18) {
+      tagList(
+        tags$p("Notice: The computation may take up to several minutes due to large model size.", style = "color: black;")
+      )
+    }
+  })
+  
+  # show warning message for potential negative variances
+  # ATTENTION: suppress warning messages in the end 
   output$warningNegativeCL2  <- renderUI({
-    if(isTRUE(input$aveloading_cross2) && input$aveloading_cross2 < 0) {
+  if( input$aveloading_cross2 < 0) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
       )
     }
   })
   output$warningCRgreaterCL2 <- renderUI({
-    if(isTRUE(input$range_cross2) && isTRUE(input$aveloading_cross2) &&
-       (input$range_cross2 > 2* input$aveloading_cross2) && (input$aveloading_cross2 >= 0 )) {
+    if((input$range_cross2 > 2* input$aveloading_cross2) && (input$aveloading_cross2 >= 0 )) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
       )
     }
   })
-  
   output$warningNegativeCL3 <- renderUI({
-    if(isTRUE(input$aveloading_cross3) && input$aveloading_cross3 < 0) {
+    if(input$aveloading_cross3 < 0) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
       )
     }
   })
   output$warningCRgreaterCL3 <- renderUI({
-    if((isTRUE(input$range_cross3) && isTRUE(input$aveloading_cross3) &&
-        input$range_cross3 > 2* input$aveloading_cross3) && (input$aveloading_cross3 >= 0 )) {
+    if((input$range_cross3 > 2* input$aveloading_cross3) && (input$aveloading_cross3 >= 0 )) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
       )
@@ -387,7 +403,7 @@ server <- function(input, output, session) {
                                                         "<br>CFI: ", sprintf('%.3f', cfi_dif_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
           # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
-          geom_abline(color="grey",slope=0, intercept=0.95) 
+          geom_abline(color="grey",slope=0, intercept=0.95)
         
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
