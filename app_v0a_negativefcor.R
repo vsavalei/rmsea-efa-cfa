@@ -34,10 +34,7 @@ ui <- fluidPage(
              top: calc(50%);
              left: calc(50%);
              opacity: 1;
-             }
-             "
-              )
-            )), 
+             }"))), 
   
   h1("SEM Fit Indices' Sensitivity to cross-loadings"),
   h4("How sensitive are RMSEA, CFI, and SRMR to omitted cross-loadings? This app will generate population covariance matrices 
@@ -57,16 +54,14 @@ ui <- fluidPage(
 				 impossible configurations can still be generated unless both MR and CR are set to zero. Check the printed residual 
 				 variances for negative values. Plots will be omitted for all such configurations."),  
       br(),br(), 
-      
       radioButtons("custom", "I would like to examine a ", 
                    c("Two factor model"="twoFactor","Three factor model"="threeFactor")),
-      
       
       conditionalPanel(
         condition = "input.custom == 'twoFactor'",
         sliderInput("p2", "Total number of variables:", min=4, max=50, step=2, value=8), 
         #Vika added 2/5/2023: min=-1 i/0 0
-        sliderInput("fcor2", "Factor correlation in the true model:", min=-1, max=1, value=.2,step=.05), 
+        sliderInput("fcor2", "Factor correlation in the true model:", min=-1, max=1, value=.2, step=.05), 
         sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange2"), #MR
         uiOutput("slidemax_cross2"), #CL
@@ -79,7 +74,7 @@ ui <- fluidPage(
         condition = "input.custom == 'threeFactor'",
         sliderInput("p3", "Total number of variables:", min=6, max=51, step=3, value=9), 
         
-        sliderInput("fcor3", "Factor correlation in the true model:", min=-1, max=1, value=.2), # Karyn May 6th: changed min from 0 to -1 
+        sliderInput("fcor3", "Factor correlation in the true model:", min=-1, max=1, value=.2, step=.05), # Karyn May 6th: changed min from 0 to -1 
         sliderInput("aveloading3", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange3"), #MR
         uiOutput("slidemax_cross3"), #CL
@@ -244,7 +239,6 @@ server <- function(input, output, session) {
     
     numCrossLoading <- runif(numCrossLoadingSwitch, min=aveloading_crossSwitch -.5*range_crossSwitch, max=aveloading_crossSwitch+.5*range_crossSwitch)
     
-    
     # Allow switching the main function between two-factor model and three-factor model
     mainFunc <- switch(input$custom,
                        twoFactor = main.2f,
@@ -290,7 +284,6 @@ server <- function(input, output, session) {
       
       table3f2 <- as.data.frame(t(round(numCrossLoading, 3)))
       row.names(table3f2) <- c("Cross loading values")
-      
       
       output$table <- renderDataTable(datatable(table3f1,
                                                 # container = sketchThreeFactor,
@@ -341,7 +334,6 @@ server <- function(input, output, session) {
       })
     }
     
-    
     if (input$custom =="twoFactor"){
       genResiduals_seq <- as.vector(select(residuals,matches("x[0-9]{1,2}same")))%>%
         unname()%>%
@@ -350,6 +342,7 @@ server <- function(input, output, session) {
       genResiduals_alt <- as.vector(select(residuals,matches("x[0-9]{1,2}dif")))%>%
         unname()%>%
         unlist()
+      
       # the table output
       table2f1 <- as.data.frame(rbind(
         round(genLoadingss, 3),
@@ -398,8 +391,7 @@ server <- function(input, output, session) {
     
     output$tabletext <- renderUI({
       HTML(paste(strong(em("Main loadings"))," for a ", numText, " are randomly generated." ,
-                 strong(em("Crossloadings"))," are randomly generated and added to the true model, one by one.")
-      )
+                 strong(em("Crossloadings"))," are randomly generated and added to the true model, one by one."))
     })
     
     #define text
@@ -417,6 +409,17 @@ server <- function(input, output, session) {
       
       ColorblindnessFriendlyValues4 <- c("Same1" = "#648FFF", "Same2" = "#D81B60", "Alt1" = "#FFB000", "Alt2" = "#004D40")
       
+      print(max(results$number_crossloadings))
+      
+      # ensure the x-axis only has whole number 
+      # if ((max(results$number_crossloadings) %% 12 == 0)) {
+      #   step_tick <- floor(max(results$number_crossloadings)/ 12)
+      # } else if (max(results$number_crossloadings) %% 9 == 0) {
+      #   step_tick <- floor(max(results$number_crossloadings)/ 9)
+      # } else if (max(results$number_crossloadings) %% 6 == 0) {
+      #   step_tick <- floor(max(results$number_crossloadings)/ 6)
+      # } 
+      
       output$plots <- renderPlotly({
         
         upperbound_rmsea = max(c(results$rmsea_same1_f,results$rmsea_dif1_f,results$rmsea_same2_f,results$rmsea_dif2_f,0.08)) + 0.005
@@ -424,6 +427,7 @@ server <- function(input, output, session) {
         lowerbound_cfi = min(c(results$cfi_same1_f,results$cfi_same2_f,results$cfi_dif1_f,results$cfi_dif2_f,0.9))-0.005
         
         plot1 <- ggplot(data=results,aes(x=number_crossloadings)) +
+          # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=rmsea_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same1_f,
                                           color="Same1",
@@ -455,6 +459,7 @@ server <- function(input, output, session) {
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot2 <- ggplot(data=results,aes(x=number_crossloadings)) +
+          # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=cfi_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same1_f,
                                           color="Same1",
@@ -486,6 +491,7 @@ server <- function(input, output, session) {
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot3 <- ggplot(data=results,aes(x=number_crossloadings)) +
+          # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=srmr_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same1_f,
                                           color="Same1",
@@ -573,7 +579,7 @@ server <- function(input, output, session) {
         } else {
           step_tick <- floor(max(results$number_crossloadings)/ 3)
         } 
-            
+        
         plot1 <- ggplot(data=results,aes(x=number_crossloadings))+ 
           scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(aes(y=rmsea_same_f,
@@ -613,7 +619,8 @@ server <- function(input, output, session) {
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
           # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
           geom_abline(color="grey",slope=0, intercept=0.95) + 
-          ylim(lowerbound_cfi,NA)
+          ylim(lowerbound_cfi,NA)+
+          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
         
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
