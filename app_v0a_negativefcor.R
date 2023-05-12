@@ -65,9 +65,9 @@ ui <- fluidPage(
         sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange2"), #MR
         uiOutput("slidemax_cross2"), #CL
-        uiOutput(outputId = "warningNegativeCL2"),
+        suppressWarnings(uiOutput(outputId = "warningNegativeCL2")),
         uiOutput("sliderange_cross2"), #CR
-        uiOutput(outputId = "warningCRgreaterCL2")
+        suppressWarnings(uiOutput(outputId = "warningCRgreaterCL2"))
       ),
       
       conditionalPanel(
@@ -78,8 +78,8 @@ ui <- fluidPage(
         sliderInput("aveloading3", "Average Main Loading (ML)", min=0, max=1,value=.7),
         uiOutput("sliderange3"), #MR
         uiOutput("slidemax_cross3"), #CL
-        uiOutput(outputId = "warningNegativeCL3"),
-        uiOutput("sliderange_cross3"), #CR
+        suppressWarnings(uiOutput(outputId = "warningNegativeCL3")),
+        suppressWarnings(uiOutput("sliderange_cross3")), #CR
         uiOutput(outputId = "warningCRgreaterCL3")
       ),
       
@@ -170,14 +170,15 @@ server <- function(input, output, session) {
   })
   # Attention: this is producing a warning message. Fix it later
   output$warningNegativeCL2  <- renderUI({
-    if(input$aveloading_cross2 < 0) {
+    if(isTRUE(input$aveloading_cross2) && input$aveloading_cross2 < 0) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
       )
     }
   })
   output$warningCRgreaterCL2 <- renderUI({
-    if((input$range_cross2 > 2* input$aveloading_cross2) & (input$aveloading_cross2 >= 0 )) {
+    if(isTRUE(input$range_cross2) && isTRUE(input$aveloading_cross2) &&
+       (input$range_cross2 > 2* input$aveloading_cross2) && (input$aveloading_cross2 >= 0 )) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
       )
@@ -185,14 +186,15 @@ server <- function(input, output, session) {
   })
   
   output$warningNegativeCL3 <- renderUI({
-    if(input$aveloading_cross3 < 0) {
+    if(isTRUE(input$aveloading_cross3) && input$aveloading_cross3 < 0) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
       )
     }
   })
   output$warningCRgreaterCL3 <- renderUI({
-    if((input$range_cross3 > 2* input$aveloading_cross3) & (input$aveloading_cross3 >= 0 )) {
+    if((isTRUE(input$range_cross3) && isTRUE(input$aveloading_cross3) &&
+        input$range_cross3 > 2* input$aveloading_cross3) && (input$aveloading_cross3 >= 0 )) {
       tagList(
         tags$p("Warning: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
       )
@@ -321,10 +323,10 @@ server <- function(input, output, session) {
             '\\begin{pmatrix}     *&1&2\\\\
                                 3& *&4\\\\ 
                               5&6&* \\end{pmatrix}',
-            HTML("<p>In “Same 1” order, cross-loadings are added column-wise, until each factor reflects all other indicators; blocks are completely filled in in the following order: 3, 5, 1, 6, 2, 4.</p>"),
-            HTML("<p>In “Same 2” order, cross-loadings are added until a factor covers indicators of just one other factor before moving on to the next factor; blocks are completely filled in in the following order: 3, 6, 2, 5, 1, 4.</p>"),
-            HTML("<p>In “Alternating 1” order, loadings are added row-wise, first alternating between blocks 1 and 2 until they are saturated, then between blocks 3 and 4 until they are saturated, then between blocks 5 and 6.</p>"),
-            HTML("<p>In “Alternating 2” order, one cross-loading is added to each block, and then the cycle is repeated, so that no block gets saturated with cross-loadings until the very end of the series.</p>")
+            HTML("<p>In <strong>“Same 1”</strong> order, cross-loadings are added column-wise, until each factor reflects all other indicators; blocks are completely filled in in the following order: 3, 5, 1, 6, 2, 4.</p>"),
+            HTML("<p>In <strong>“Same 2”</strong> order, cross-loadings are added until a factor covers indicators of just one other factor before moving on to the next factor; blocks are completely filled in in the following order: 3, 6, 2, 5, 1, 4.</p>"),
+            HTML("<p>In <strong>“Alternating 1”</strong> order, loadings are added row-wise, first alternating between blocks 1 and 2 until they are saturated, then between blocks 3 and 4 until they are saturated, then between blocks 5 and 6.</p>"),
+            HTML("<p>In <strong>“Alternating 2”</strong> order, one cross-loading is added to each block, and then the cycle is repeated, so that no block gets saturated with cross-loadings until the very end of the series.</p>")
           )
         )
       })
@@ -425,6 +427,7 @@ server <- function(input, output, session) {
         lowerbound_cfi = min(c(results$cfi_same1_f,results$cfi_same2_f,results$cfi_dif1_f,results$cfi_dif2_f,0.9))-0.005
         
         plot1 <- ggplot(data=results,aes(x=number_crossloadings)) +
+          scale_y_continuous(limits = c(NA,upperbound_rmsea), labels = function(x) sprintf("%.2f", x)) +
           # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=rmsea_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same1_f,
@@ -452,12 +455,11 @@ server <- function(input, output, session) {
           geom_abline(color="grey",slope=0, intercept=0.08) +
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           # labs(color = "Order") +
-          ylab("RMSEA")+
-          ylim(NA,upperbound_rmsea)+
-          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
+          ylab("RMSEA")
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot2 <- ggplot(data=results,aes(x=number_crossloadings)) +
+          scale_y_continuous(limits = c(lowerbound_cfi, NA), labels = function(x) sprintf("%.2f", x)) +
           # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=cfi_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same1_f,
@@ -485,12 +487,11 @@ server <- function(input, output, session) {
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           geom_abline(color="grey",slope=0, intercept=0.95) +
           # labs(color = "Order") +
-          ylab("CFI")+
-          ylim(lowerbound_cfi,NA)+
-          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
+          ylab("CFI")
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot3 <- ggplot(data=results,aes(x=number_crossloadings)) +
+          scale_y_continuous(limits = c(NA,upperbound_srmr) , labels = function(x) sprintf("%.2f", x)) +
           # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=srmr_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same1_f,
@@ -518,9 +519,8 @@ server <- function(input, output, session) {
           geom_abline(color="grey",slope=0, intercept=0.08) +
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           labs(color = "Order") +
-          ylab("SRMR")+
-          ylim(NA,upperbound_srmr)+
-          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
+          ylab("SRMR")
+
         p3 <- ggplotly(plot3,tooltip = c("text"))  
         
         subplot(
@@ -582,6 +582,7 @@ server <- function(input, output, session) {
         
         plot1 <- ggplot(data=results,aes(x=number_crossloadings))+ 
           scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
+          scale_y_continuous(limits = c(NA,upperbound_rmsea), labels = function(x) sprintf("%.2f", x)) +
           geom_line(aes(y=rmsea_same_f,
                         color="Same"))+ 
           suppressWarnings(geom_point(aes(y=rmsea_same_f,
@@ -595,14 +596,13 @@ server <- function(input, output, session) {
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +
           # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
-          geom_abline(color="grey",slope=0, intercept=0.08) +
-          ylim(NA,upperbound_rmsea) +
-          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
+          geom_abline(color="grey",slope=0, intercept=0.08) 
         
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot2 <- ggplot(data=results, aes(x=number_crossloadings))+ 
           scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
+          scale_y_continuous(limits = c(lowerbound_cfi, NA), labels = function(x) sprintf("%.2f", x)) +
           geom_line(aes(y=cfi_same_f,
                         color="Same"))+ 
           suppressWarnings(geom_point(aes(y=cfi_same_f,
@@ -619,14 +619,13 @@ server <- function(input, output, session) {
                                                         "<br>CFI: ", sprintf('%.3f', cfi_dif_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
           # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
-          geom_abline(color="grey",slope=0, intercept=0.95) + 
-          ylim(lowerbound_cfi,NA)+
-          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
+          geom_abline(color="grey",slope=0, intercept=0.95) 
         
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         
         plot3 <- ggplot(data=results, aes(x=number_crossloadings))+ 
           scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
+          scale_y_continuous(limits = c(NA,upperbound_srmr) , labels = function(x) sprintf("%.2f", x)) +
           geom_line(aes(y=srmr_same_f,
                         color="Same"))+ 
           geom_line(aes(y=srmr_dif_f,color="Alt"))+ 
@@ -643,9 +642,7 @@ server <- function(input, output, session) {
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
           # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
           geom_abline(color="grey",slope=0, intercept=0.08) + 
-          labs(color = "Order") +
-          ylim(NA,upperbound_srmr) +
-          scale_y_continuous(labels = function(x) sprintf("%.2f", x))
+          labs(color = "Order") 
         
         p3 <- ggplotly(plot3,tooltip = c("text"))
         
