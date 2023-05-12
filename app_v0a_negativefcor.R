@@ -1,7 +1,6 @@
 library(shiny)
 library(plotly) 
 library(DT)
-library(dplyr)
 library(shinybusy)
 library(Matrix)
 source("functions_app.R")
@@ -91,7 +90,6 @@ ui <- fluidPage(
       plotlyOutput("plots"),
       br(),
       uiOutput("tabletext"),
-      
       dataTableOutput("table"),
       dataTableOutput("table2"),
       conditionalPanel(
@@ -276,8 +274,6 @@ server <- function(input, output, session) {
 	          You can hover over the curve to get specific fit index values.", sep="") 
     })
     
-
-    
     if (input$custom =="twoFactor"){
       
       ### 3f tables ====
@@ -422,37 +418,7 @@ server <- function(input, output, session) {
           p1,p2,p3,
           nrows = 1
         ) %>%
-          layout(annotations = list( 
-            list( 
-              x = 0.151,
-              y = 1.0,
-              text = "RMSEA",  
-              xref = "paper",  
-              yref = "paper",  
-              xanchor = "center",  
-              yanchor = "bottom",  
-              showarrow = FALSE 
-            ),  
-            list( 
-              x = 0.5, 
-              y = 1,  
-              text = "CFI",  
-              xref = "paper",  
-              yref = "paper",  
-              xanchor = "center",  
-              yanchor = "bottom",  
-              showarrow = FALSE 
-            ),  
-            list( 
-              x = 0.85,  
-              y = 1,  
-              text = "SRMR",  
-              xref = "paper",  
-              yref = "paper",  
-              xanchor = "center",  
-              yanchor = "bottom",  
-              showarrow = FALSE 
-            )))
+          layout(annotations = layout_3_figs)
       })
     }
     
@@ -483,10 +449,10 @@ server <- function(input, output, session) {
       table3f2 <- as.data.frame(t(round(numCrossLoading, 3)))
       row.names(table3f2) <- c("Cross loading values")
       
+      # number of items (added this to avoid )
       numItem<- numCrossLoadingSwitch/2
       
       output$table <- renderDataTable(datatable(table3f1,
-                                                # container = sketchThreeFactor,
                                                 colnames = paste0(rep("item", numItem), c(1: numItem)),
                                                 caption = "Parameter values when all cross-loadings are added",
                                                 options = list( scrollX = T, # to add a horizontal scroller in case of having a wide table
@@ -494,7 +460,6 @@ server <- function(input, output, session) {
                                                                 ordering = F # to hide the ordering function
                                                 )))
       output$table2 <- renderDataTable(datatable(table3f2,
-                                                 # container = sketchThreeFactor,
                                                  colnames = paste0(rep("CL", numCrossLoadingSwitch), c(1:numCrossLoadingSwitch)),
                                                  caption = "All the cross-loadings",
                                                  options = list( scrollX = T, # to add a horizontal scroller in case of having a wide table
@@ -512,6 +477,7 @@ server <- function(input, output, session) {
       print("Alt2 Cross loading values")
       print(sparseMatrix(j = orders[,"col.dif2"], i = orders[,"row.dif2"], x = orders[,"cld"]))
       
+      # render the matrix to explain how cross loadings are added 
       output$matrix <- renderUI({
         withMathJax(
           helpText(
@@ -531,14 +497,6 @@ server <- function(input, output, session) {
       
       ### 3f figures ====
       ColorblindnessFriendlyValues4 <- c("Same1" = "#648FFF", "Same2" = "#D81B60", "Alt1" = "#FFB000", "Alt2" = "#004D40")
-      # ensure the x-axis only has whole number 
-      # if ((max(results$number_crossloadings) %% 12 == 0)) {
-      #   step_tick <- floor(max(results$number_crossloadings)/ 12)
-      # } else if (max(results$number_crossloadings) %% 9 == 0) {
-      #   step_tick <- floor(max(results$number_crossloadings)/ 9)
-      # } else if (max(results$number_crossloadings) %% 6 == 0) {
-      #   step_tick <- floor(max(results$number_crossloadings)/ 6)
-      # } 
       
       output$plots <- renderPlotly({
         
@@ -647,39 +605,42 @@ server <- function(input, output, session) {
           p1,p2,p3,
           nrows = 1
         ) %>%
-          layout(annotations = list(
-            list(
-              x = 0.151,
-              y = 1.0,
-              text = "RMSEA",
-              xref = "paper",
-              yref = "paper",
-              xanchor = "center",
-              yanchor = "bottom",
-              showarrow = FALSE
-            ),
-            list(
-              x = 0.5,
-              y = 1,
-              text = "CFI",
-              xref = "paper",
-              yref = "paper",
-              xanchor = "center",
-              yanchor = "bottom",
-              showarrow = FALSE
-            ),
-            list(
-              x = 0.84,
-              y = 1,
-              text = "SRMR",
-              xref = "paper",
-              yref = "paper",
-              xanchor = "center",
-              yanchor = "bottom",
-              showarrow = FALSE
-            ) ))
+          layout(annotations = layout_3_figs)
       })
     }
+    
+    # Managing the layout of three figures 
+    layout_3_figs <- list(
+      list(
+        x = 0.151,
+        y = 1.0,
+        text = "RMSEA",
+        xref = "paper",
+        yref = "paper",
+        xanchor = "center",
+        yanchor = "bottom",
+        showarrow = FALSE
+      ),
+      list(
+        x = 0.5,
+        y = 1,
+        text = "CFI",
+        xref = "paper",
+        yref = "paper",
+        xanchor = "center",
+        yanchor = "bottom",
+        showarrow = FALSE
+      ),
+      list(
+        x = 0.84,
+        y = 1,
+        text = "SRMR",
+        xref = "paper",
+        yref = "paper",
+        xanchor = "center",
+        yanchor = "bottom",
+        showarrow = FALSE
+      ) )
   }) 
 }
 
