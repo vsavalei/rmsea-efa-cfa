@@ -62,7 +62,7 @@ ui <- fluidPage(
         uiOutput(outputId = "warningLargeP2"),
         #Vika added 2/5/2023: min=-1 i/0 0
         sliderInput("fcor2", "Factor correlation in the true model:", min=-1, max=1, value=.2, step=.05), 
-        sliderInput("aveloading2", "Average Main Loading (ML)", min=0, max=1,value=.7),
+        sliderInput("aveloading2", "Average Main Loading (ML):", min=0, max=1,value=.7),
         uiOutput("sliderange2"), #MR
         uiOutput("slidemax_cross2"), #CL
         uiOutput(outputId = "warningNegativeCL2"),
@@ -76,7 +76,7 @@ ui <- fluidPage(
         uiOutput(outputId = "warningLargeP3"),
         # Karyn May 6th: changed min from 0 to -1 
         sliderInput("fcor3", "Factor correlation in the true model:", min=-1, max=1, value=.2, step=.05), 
-        sliderInput("aveloading3", "Average Main Loading (ML)", min=0, max=1,value=.7),
+        sliderInput("aveloading3", "Average Main Loading (ML):", min=0, max=1,value=.7),
         uiOutput("sliderange3"), #MR
         uiOutput("slidemax_cross3"), #CL
         uiOutput(outputId = "warningNegativeCL3"),
@@ -115,7 +115,7 @@ server <- function(input, output, session) {
   #define input sliders for TWO factor model
   #Vika change 2/40/2023: added min below (before was 0), changed max to not exceed 1
   output$slidemax_cross2 <- renderUI({
-    sliderInput("aveloading_cross2", "Average Cross Loading (CL)", 
+    sliderInput("aveloading_cross2", "Average Cross Loading (CL):", 
                 min = round((-sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2),2), 
                 max = round(
                   min(1, (sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2))
@@ -124,14 +124,14 @@ server <- function(input, output, session) {
   })
   
   output$sliderange2 <- renderUI({
-    sliderInput("range2", "Main Loadings Range (MR)", min = 0, max = round((min(2*input$aveloading2, 2*(1-input$aveloading2))),2), 
+    sliderInput("range2", "Main Loadings Range (MR):", min = 0, max = round((min(2*input$aveloading2, 2*(1-input$aveloading2))),2), 
                 value = min(.1,input$aveloading2, (1-input$aveloading2)), round = -3, step = 0.01) 
   })
   
   #vika 2/5/2023: In the min(1,2*input$aveloading_cross2,...), replace 1 with 2, 
   #and the second term with its generalized version 
   output$sliderange_cross2 <- renderUI({
-    sliderInput("range_cross2", "Cross-Loadings Range (CR)", 
+    sliderInput("range_cross2", "Cross-Loadings Range (CR):", 
                 min = 0, 
                 max = round(min(2,
                                 2*abs(-sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)
@@ -144,7 +144,7 @@ server <- function(input, output, session) {
   
   #define input sliders for THREE factor model
   output$slidemax_cross3 <- renderUI({
-    sliderInput("aveloading_cross3", "Average Cross Loading (CL)", 
+    sliderInput("aveloading_cross3", "Average Cross Loading (CL):", 
                 min = round((-sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)-input$fcor3*input$aveloading3),2), 
                 max = round((sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)-input$fcor3*input$aveloading3),2), 
                 round = -2, step = 0.01, value = .2)
@@ -152,13 +152,13 @@ server <- function(input, output, session) {
   
   #for randomly generated factor loadings:
   output$sliderange3 <- renderUI({
-    sliderInput("range3", "Main Loadings Range (MR)", min = 0, max = round((min(2*input$aveloading3, 2*(1-input$aveloading3))),2), 
+    sliderInput("range3", "Main Loadings Range (MR):", min = 0, max = round((min(2*input$aveloading3, 2*(1-input$aveloading3))),2), 
                 value = min(.1,input$aveloading3, (1-input$aveloading3)), round = -3, step = 0.01) 
   })
   
   #for randomly generated factor cross-loadings:  # Karyn May 6th
   output$sliderange_cross3 <- renderUI({
-    sliderInput("range_cross3", "Cross-Loadings Range (CR)", 
+    sliderInput("range_cross3", "Cross-Loadings Range (CR):", 
                 min = 0, 
                 max = round(min(2,
                                 2*abs(-sqrt(1-(input$aveloading3)^2+(input$fcor3*input$aveloading3)^2)
