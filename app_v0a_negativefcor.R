@@ -53,8 +53,18 @@ ui <- fluidPage(
 				 impossible configurations can still be generated unless both MR and CR are set to zero. Check the printed residual 
 				 variances for negative values. Plots will be omitted for all such configurations."),  
       br(),br(), 
-      radioButtons("custom", "I would like to examine a ", 
-                   c("Two factor model"="twoFactor", "Three factor model"="threeFactor")),
+      radioButtons("custom", "You would like to examine a ", 
+                   c("Two factor model"="twoFactor", "Three factor model"="threeFactor"), inline = TRUE),
+      
+      radioButtons("useSeed", "Would you like to set a random seed?", 
+                   c("No"="seed_no", "Yes"="seed_yes"), inline = TRUE),
+      conditionalPanel(condition = "input.useSeed == 'seed_yes'",
+                       numericInput(inputId="seedNum", 
+                                    label="Enter an a random seed", 
+                                    value = 123, 
+                                    max = 2147483647, # the maximum possible seed number 
+                                    min = -2147483647, # the minimum possible seed number 
+                                    step = 1)),
       
       conditionalPanel(
         condition = "input.custom == 'twoFactor'",
@@ -216,6 +226,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$updateButton,{      
+      
     pSwitch <- switch(input$custom,
                       twoFactor = input$p2,
                       threeFactor = input$p3)
@@ -249,7 +260,18 @@ server <- function(input, output, session) {
                       twoFactor = "2-factor model",
                       threeFactor = "3-factor model")
     
+    
+    
     #set.seed(123) #enable to replicate figures in the paper
+    
+    if (input$useSeed =="seed_yes") {
+      seed <- input$seedNum
+      set.seed(seed)
+    } else if (input$useSeed =="seed_no") {
+      seed <- round(runif(1, min = -10000, max = 10000))
+      set.seed(seed)
+    }
+    
     
     genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch) 
     
@@ -371,15 +393,12 @@ server <- function(input, output, session) {
                         color="Same"))+ 
           suppressWarnings(geom_point(aes(y=rmsea_same_f,
                                           color="Same",
-                                          # shape = "Same",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same_f)))))+
           geom_line(aes(y=rmsea_dif_f,color ="Alt"))+
           suppressWarnings(geom_point(aes(y=rmsea_dif_f,
                                           color ="Alt",
-                                          # shape = "Alt",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +
-          # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
           geom_abline(color="grey",slope=0, intercept=0.08) 
         
         p1 <- ggplotly(plot1,tooltip = c("text"))  %>% style(showlegend = FALSE)
@@ -391,18 +410,15 @@ server <- function(input, output, session) {
                         color="Same"))+ 
           suppressWarnings(geom_point(aes(y=cfi_same_f,
                                           color="Same",
-                                          # shape = "Same",
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>CFI: ", sprintf('%.3f', cfi_same_f)))))+
           geom_line(aes(y=cfi_dif_f, 
                         color="Alt"))+ 
           suppressWarnings(geom_point(aes(y=cfi_dif_f,
                                           color="Alt",
-                                          # shape = "Alt",
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>CFI: ", sprintf('%.3f', cfi_dif_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
-          # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
           geom_abline(color="grey",slope=0, intercept=0.95)
         
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
@@ -415,16 +431,13 @@ server <- function(input, output, session) {
           geom_line(aes(y=srmr_dif_f,color="Alt"))+ 
           suppressWarnings(geom_point(aes(y=srmr_same_f,
                                           color="Same",
-                                          # shape = "Same",
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>SRMR: ", sprintf('%.3f', srmr_same_f)))))+
           suppressWarnings(geom_point(aes(y=srmr_dif_f,
                                           color="Alt",
-                                          # shape = "Alt",
                                           text = paste0("# of cross Loadings: ", number_crossloadings,
                                                         "<br>SRMR: ", sprintf('%.3f', srmr_dif_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
-          # scale_shape_manual(values = c("Same" = 16, "Alt" = 17), labels = c("Same", "Alt")) +
           geom_abline(color="grey",slope=0, intercept=0.08) + 
           labs(color = "Order") + theme(legend.position = c(0.8, 0.2))
         
@@ -434,13 +447,12 @@ server <- function(input, output, session) {
           p1,p2,p3,
           nrows = 1
         ) %>%
-          layout(annotations = layout_3_figs)# %>%
-          # layout(legend = list(orientation="h",
-          #                      entrywidth=70,
-          #                      yanchor="bottom",
-          #                      y=4,
-          #                      xanchor="right",
-          #                      x=1))            
+          layout(annotations = layout_3_figs,
+                 title = list(text= paste("Seed = ", seed, sep = ""),
+                              font = list(size = 12),
+                              xref= "container",
+                              xanchor = 'left',
+                              x = 0.01))   
       })
     }
     
@@ -532,25 +544,21 @@ server <- function(input, output, session) {
           geom_line(mapping = aes( y=rmsea_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same1_f,
                                           color="Same1",
-                                          # shape="Same1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same1_f)))))+
           
           geom_line(mapping = aes( y=rmsea_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same2_f,
                                           color="Same2",
-                                          # shape="Same2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_same2_f)))))+
           
           geom_line(mapping = aes( y=rmsea_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_dif1_f,
                                           color="Alt1",
-                                          # shape="Alt1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif1_f)))))+
           
           geom_line(mapping = aes( y=rmsea_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_dif2_f,
                                           color="Alt2",
-                                          # shape="Alt2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>RMSEA: ", sprintf('%.3f', rmsea_dif2_f)))))+
           geom_abline(color="grey",slope=0, intercept=0.08) +
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
@@ -564,25 +572,21 @@ server <- function(input, output, session) {
           geom_line(mapping = aes( y=cfi_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same1_f,
                                           color="Same1",
-                                          # shape="Same1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_same1_f)))))+
           
           geom_line(mapping = aes( y=cfi_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same2_f,
                                           color="Same2",
-                                          # shape="Same2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_same2_f)))))+
           
           geom_line(mapping = aes( y=cfi_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_dif1_f,
                                           color="Alt1",
-                                          # shape="Alt1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif1_f)))))+
           
           geom_line(mapping = aes( y=cfi_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_dif2_f,
                                           color="Alt2",
-                                          # shape="Alt2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif2_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           geom_abline(color="grey",slope=0, intercept=0.95) +
@@ -596,74 +600,72 @@ server <- function(input, output, session) {
           geom_line(mapping = aes( y=srmr_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same1_f,
                                           color="Same1",
-                                          # shape="Same1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_same1_f)))))+
           
           geom_line(mapping = aes( y=srmr_same2_f, color="Same2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same2_f,
                                           color="Same2",
-                                          # shape="Same2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_same2_f)))))+
           
           geom_line(mapping = aes( y=srmr_dif1_f, color="Alt1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_dif1_f,
                                           color="Alt1",
-                                          # shape="Alt1",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif1_f)))))+
           
           geom_line(mapping = aes( y=srmr_dif2_f, color="Alt2"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_dif2_f,
                                           color="Alt2",
-                                          # shape="Alt2",
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>SRMR: ", sprintf('%.3f', srmr_dif2_f)))))+
           geom_abline(color="grey",slope=0, intercept=0.08) +
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           labs(color = "Order") +
           ylab("SRMR")
         
-        p3 <- ggplotly(plot3,tooltip = c("text"))  #%>%
-          # layout(legend = list(orientation="h",
-          #                      entrywidth=70,
-          #                      yanchor="bottom",
-          #                      y=4,
-          #                      xanchor="right",
-          #                      x=1)) 
+        p3 <- ggplotly(plot3,tooltip = c("text"))  
         
         subplot(
           p1,p2,p3,
           nrows = 1
         ) %>%
-          layout(annotations = layout_3_figs)
+          layout(annotations = layout_3_figs,
+                 title = list(text= paste("Seed = ", seed, sep = ""),
+                              font = list(size = 12),
+                              xref= "container",
+                              xanchor = 'left',
+                              x = 0.01))
       })
     }
     
     # Managing the layout of three figures 
     layout_3_figs <- list(
       list(
-        x= -0.005,
-        y =1.05,
-        xanchor="left",
+        x = 0.151,
+        y = 1.0,
         text = "RMSEA",
         xref = "paper",
         yref = "paper",
+        xanchor = "center",
+        yanchor = "bottom",
         showarrow = FALSE
       ),
       list(
-        x = 0.35,
-        y = 1.05,
+        x = 0.5,
+        y = 1,
         text = "CFI",
         xref = "paper",
         yref = "paper",
-        xanchor="left",
+        xanchor = "center",
+        yanchor = "bottom",
         showarrow = FALSE
       ),
       list(
-        x = 0.68,
-        y = 1.05,
+        x = 0.84,
+        y = 1,
         text = "SRMR",
         xref = "paper",
         yref = "paper",
-        xanchor="left",
+        xanchor = "center",
+        yanchor = "bottom",
         showarrow = FALSE
       ) )
   }) 
