@@ -172,14 +172,14 @@ server <- function(input, output, session) {
   output$warningLargeP2  <- renderUI({
     if(input$p2 > 20) {
       tagList(
-        tags$p("Notice: The computation may take up to several minutes due to large model size.", style = "color: black;")
+        tags$p("Warning: For a model of this size, you may have to wait a while!", style = "color: red;")
       )
     }
   })
   output$warningLargeP3  <- renderUI({
     if(input$p3 > 18) {
       tagList(
-        tags$p("Notice: The computation may take up to several minutes due to large model size.", style = "color: black;")
+        tags$p("Warning: For a model of this size, you may have to wait a while!", style = "color: red;")
       )
     }
   })
@@ -434,13 +434,13 @@ server <- function(input, output, session) {
           p1,p2,p3,
           nrows = 1
         ) %>%
-          layout(annotations = layout_3_figs)%>%
-          layout(legend = list(orientation="h",
-                               entrywidth=70,
-                               yanchor="bottom",
-                               y=4,
-                               xanchor="right",
-                               x=1))            
+          layout(annotations = layout_3_figs)# %>%
+          # layout(legend = list(orientation="h",
+          #                      entrywidth=70,
+          #                      yanchor="bottom",
+          #                      y=4,
+          #                      xanchor="right",
+          #                      x=1))            
       })
     }
     
@@ -621,13 +621,13 @@ server <- function(input, output, session) {
           labs(color = "Order") +
           ylab("SRMR")
         
-        p3 <- ggplotly(plot3,tooltip = c("text"))  %>%
-          layout(legend = list(orientation="h",
-                               entrywidth=70,
-                               yanchor="bottom",
-                               y=4,
-                               xanchor="right",
-                               x=1)) 
+        p3 <- ggplotly(plot3,tooltip = c("text"))  #%>%
+          # layout(legend = list(orientation="h",
+          #                      entrywidth=70,
+          #                      yanchor="bottom",
+          #                      y=4,
+          #                      xanchor="right",
+          #                      x=1)) 
         
         subplot(
           p1,p2,p3,
