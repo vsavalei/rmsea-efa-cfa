@@ -305,8 +305,7 @@ server <- function(input, output, session) {
     output$plottext <- renderText({ 
       paste("In the plots below, the number of crossloadings in the true model is on the x-axis; this number 
 	          varies from 0 to ", isolate(pSwitch), " (the number of variables). The cross-loadings in the true 
-	          model are being added either a) to the first factor first and then to the second factor
-	          or b) to the alternating factors. Their exact values are given by the list above. (If some 
+	          model are being added in the order described in the paper. Their exact values are shown in the tables below. (If some 
 	          values are missing from the plots, one of the residual variances is negative or the model 
 	          failed to converge). The fitted model is a ", numText ," with no cross-loadings. 
 	          You can hover over the curve to get specific fit index values.", sep="") 
