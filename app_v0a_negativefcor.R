@@ -56,7 +56,7 @@ ui <- fluidPage(
       radioButtons("custom", "You would like to examine a ", 
                    c("Two factor model"="twoFactor", "Three factor model"="threeFactor"), inline = TRUE),
       
-      radioButtons("useSeed", "Would you like to set a random seed?", 
+      radioButtons("useSeed", "Would you like to specify a random seed?", 
                    c("No"="seed_no", "Yes"="seed_yes"), inline = TRUE),
       conditionalPanel(condition = "input.useSeed == 'seed_yes'",
                        numericInput(inputId="seedNum", 
@@ -260,18 +260,13 @@ server <- function(input, output, session) {
                       twoFactor = "2-factor model",
                       threeFactor = "3-factor model")
     
-    
-    
-    #set.seed(123) #enable to replicate figures in the paper
-    
     if (input$useSeed =="seed_yes") {
       seed <- input$seedNum
       set.seed(seed)
     } else if (input$useSeed =="seed_no") {
-      seed <- round(runif(1, min = -10000, max = 10000))
+      seed <- round(runif(1, min = 0, max = 10000))
       set.seed(seed)
     }
-    
     
     genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch) 
     
@@ -500,16 +495,6 @@ server <- function(input, output, session) {
                                                                  ordering = F # to hide the ordering function
                                                  )))
       
-      # Print out different values for crossloadings 
-      print("Same1 Cross loading values")
-      print(sparseMatrix(j = orders[,"col.same1"], i = orders[,"row.same1"], x = orders[,"cld"]))
-      print("Same2 Cross loading values")
-      print(sparseMatrix(j = orders[,"col.same2"], i = orders[,"row.same2"], x = orders[,"cld"]))
-      print("Alt1 Cross loading values")
-      print(sparseMatrix(j = orders[,"col.dif1"], i = orders[,"row.dif1"], x = orders[,"cld"]))
-      print("Alt2 Cross loading values")
-      print(sparseMatrix(j = orders[,"col.dif2"], i = orders[,"row.dif2"], x = orders[,"cld"]))
-      
       # render the matrix to explain how cross loadings are added 
       output$matrix <- renderUI({
         withMathJax(
@@ -537,9 +522,16 @@ server <- function(input, output, session) {
         upperbound_srmr = max(c(results$srmr_same1_f,results$srmr_dif1_f,results$srmr_same2_f,results$srmr_dif2_f,0.08)) + 0.005
         lowerbound_cfi = min(c(results$cfi_same1_f,results$cfi_same2_f,results$cfi_dif1_f,results$cfi_dif2_f,0.9))-0.005
         
+        # ensure the x-axis only has whole number 
+        if ((max(results$number_crossloadings) < 9)){
+          step_tick <- 2
+        } else {
+          step_tick <- floor(max(results$number_crossloadings)/ 4)
+        } 
+        
         plot1 <- ggplot(data=results,aes(x=number_crossloadings)) +
           scale_y_continuous(limits = c(NA,upperbound_rmsea), labels = function(x) sprintf("%.2f", x)) +
-          # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
+          scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=rmsea_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=rmsea_same1_f,
                                           color="Same1",
@@ -567,7 +559,7 @@ server <- function(input, output, session) {
         
         plot2 <- ggplot(data=results,aes(x=number_crossloadings)) +
           scale_y_continuous(limits = c(lowerbound_cfi, NA), labels = function(x) sprintf("%.2f", x)) +
-          # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
+          scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=cfi_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=cfi_same1_f,
                                           color="Same1",
@@ -595,7 +587,7 @@ server <- function(input, output, session) {
         
         plot3 <- ggplot(data=results,aes(x=number_crossloadings)) +
           scale_y_continuous(limits = c(NA,upperbound_srmr) , labels = function(x) sprintf("%.2f", x)) +
-          # scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
+          scale_x_continuous(breaks = seq(min(results$number_crossloadings), max(results$number_crossloadings), step_tick)) +
           geom_line(mapping = aes( y=srmr_same1_f, color="Same1"), show.legend = FALSE)+
           suppressWarnings(geom_point(aes(y=srmr_same1_f,
                                           color="Same1",
@@ -669,6 +661,5 @@ server <- function(input, output, session) {
       ) )
   }) 
 }
-
 
 shinyApp(ui = ui, server = server)
