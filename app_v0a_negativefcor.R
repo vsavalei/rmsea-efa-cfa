@@ -581,7 +581,6 @@ server <- function(input, output, session) {
                                           text = paste0("# of cross Loadings: ", number_crossloadings, "<br>CFI: ", sprintf('%.3f', cfi_dif2_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues4, labels = c("Same1", "Same2", "Alt1", "Alt2")) +
           geom_abline(color="grey",slope=0, intercept=0.95) +
-          # labs(color = "Order") +
           ylab("CFI")
         p2 <- ggplotly(plot2,tooltip = c("text"))  %>% style(showlegend = FALSE)
         

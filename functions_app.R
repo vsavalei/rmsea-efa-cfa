@@ -1,8 +1,8 @@
+
 #R functions for app
 library(lavaan)
 # library(ggplot2)
 # library(plotly)
-
 
 #--------------------------------------------------------------------------------------#
 #this function creates a lavaan model with k=2 factors and p/k indicators per factor 
@@ -36,7 +36,6 @@ model.3f<-function(p){
 #the matrix must have 1s on diagonal or else everything defaults to NA
 
 get.fits<-function(Sigmastar,lavmodel){
-
       p<-nrow(Sigmastar)
       colnames(Sigmastar)<-rownames(Sigmastar)<-paste0("x",1:p) 
       
@@ -100,22 +99,24 @@ for (t in (1:p)) {
     #add one cross-loading at a time, to the same factor
     if (t<(p/k+1)) {Lsame[t,2]=cld[t]} else {Lsame[t,1]=cld[t]}
     Sigmastar_same<-Lsame%*%Phi%*%t(Lsame) #true cov matrix
-    diagPsi_same<-1-diag(Sigmastar_same)
     
-   if (max(diag(Sigmastar_same))>.99) {fits_same<-rep(NA,4)} else {
-      diag(Sigmastar_same)<-1; fits_same<-get.fits(Sigmastar_same,model)
-      }  
+    diagPsi_same<-1-diag(Sigmastar_same) #need for negative error variance check
+    
+    diag(Sigmastar_same)<-1 
+    
+   if (sum(ifelse(diagPsi_same<0,1,0)) > 0 | min(eigen(Sigmastar_same)$value)<0) 
+     {fits_same<-rep(NA,4)} else {fits_same<-get.fits(Sigmastar_same,model)}  
       
    #add one cross-loading at a time, to alternating factors
    if (t %% 2 ==0) {j=1; a<-(.5*p+.5*t)} else {j=2; a<-(.5*(t-1)+1)}
    Ldif[a,j]<-cld[t]
    Sigmastar_dif<-Ldif%*%Phi%*%t(Ldif) #true cov matrix
-   diagPsi_dif<-1-diag(Sigmastar_dif)
+   diagPsi_dif<-1-diag(Sigmastar_dif) #need for negative error variance check
    
-   if (max(diag(Sigmastar_dif))>.99){fits_dif<-rep(NA,4)} else {
-      diag(Sigmastar_dif)<-1 #adding error variances in the remaining amounts
-      fits_dif<-get.fits(Sigmastar_dif,model)  
-       }
+   diag(Sigmastar_dif)<-1 
+   
+   if (sum(ifelse(diagPsi_dif<0,1,0)) > 0 | min(eigen(Sigmastar_dif)$value)<0)
+     {fits_dif<-rep(NA,4)} else {fits_dif<-get.fits(Sigmastar_dif,model)}
   
    results[t+1,]<-c(t,fits_same,fits_dif,diagPsi_same,diagPsi_dif) 
   
@@ -175,7 +176,7 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
    col.same2<-c(rep(1,p/k),rep(2,p/k),rep(3,p/k),rep(1,p/k),rep(2,p/k),rep(3,p/k))
    
    #the first "different" order is filling out all the zeros going horizontally by row
-   #that is add by row all loadings to 1, 2, then to 3, 4; then to 5, 6 
+   #that is add by  row all loadings to 1, 2, then to 3, 4; then to 5, 6 
    row.dif1<-c(rep(1:(p/k),each=2),rep((p/k+1):(2*p/k),each=2),rep((2*p/k+1):p,each=2)) 
    col.dif1<-c(rep(c(2,3),p/k),rep(c(1,3),p/k),rep(c(1,2),p/k))
    
@@ -198,7 +199,7 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
    
    for (t in (1:length(row.same1))) {  #cycling through all (p-1)*k crossloadings to add
       
-      #print(t)
+      print(t)
       #add one cross-loading at a time, in all four orders
       Lsame1[row.same1[t],col.same1[t]] <- cld[t]
       Lsame2[row.same2[t],col.same2[t]] <- cld[t]
@@ -216,7 +217,7 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       Sigmastar_dif2<-Ldif2%*%Phi%*%t(Ldif2)
       
       #debug (delete later)
-      if (t==15){save(Sigmastar_same1,Sigmastar_same2,file="debug.RData")}
+      #if (t==15){save(Sigmastar_same1,Sigmastar_same2,file="debug.RData")}
       
       #residual variances (computing for all t)
       diagPsi_same1<-1-diag(Sigmastar_same1)
@@ -224,23 +225,25 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       diagPsi_dif1<-1-diag(Sigmastar_dif1)
       diagPsi_dif2<-1-diag(Sigmastar_dif2)
       
-      # rather than checking the eigenvalues, lets check if true score variances are too close to 1
-      #is this always the same for these types of models? 
-      if (max(diag(Sigmastar_same1))>.99) {fits_same1<-rep(NA,4)} else {
-         diag(Sigmastar_same1)<-1; fits_same1<-get.fits(Sigmastar_same1,model)
-      }  
+      #create Sigmas assuming diagonals of 1 (ignoring any negative vars)
+      diag(Sigmastar_same1)<-1
+      diag(Sigmastar_same2)<-1
+      diag(Sigmastar_dif1)<-1
+      diag(Sigmastar_dif2)<-1
       
-      if (max(diag(Sigmastar_same2))>.99) {fits_same2<-rep(NA,4)} else {
-         diag(Sigmastar_same2)<-1; fits_same2<-get.fits(Sigmastar_same2,model) 
-      } 
+      # only run the model if all of the residual variances would be positive AND eigenvalues are all positive 
       
-      if (max(diag(Sigmastar_dif1))>.99) {fits_dif1<-rep(NA,4)} else {
-         diag(Sigmastar_dif1)<-1; fits_dif1<-get.fits(Sigmastar_dif1,model)
-      } 
+      if (sum(ifelse(diagPsi_same1<0,1,0)) > 0 | min(eigen(Sigmastar_same1)$values)<0) 
+        {fits_same1<-rep(NA,4)} else {fits_same1<-get.fits(Sigmastar_same1,model)}  
       
-      if (max(diag(Sigmastar_dif2))>.99) {fits_dif2<-rep(NA,4)} else {
-         diag(Sigmastar_dif2)<-1; fits_dif2<-get.fits(Sigmastar_dif2,model)
-      } 
+      if (sum(ifelse(diagPsi_same2<0,1,0)) > 0 | min(eigen(Sigmastar_same2)$values)<0) 
+        {fits_same2<-rep(NA,4)} else {fits_same2<-get.fits(Sigmastar_same2,model)} 
+      
+      if (sum(ifelse(diagPsi_dif1<0,1,0)) > 0 | min(eigen(Sigmastar_dif1)$values)<0) 
+        {fits_dif1<-rep(NA,4)} else {fits_dif1<-get.fits(Sigmastar_dif1,model)} 
+      
+      if (sum(ifelse(diagPsi_dif2<0,1,0)) > 0 | min(eigen(Sigmastar_dif1)$values)<0) 
+        {fits_dif2<-rep(NA,4)} else {fits_dif2<-get.fits(Sigmastar_dif2,model)} 
       
       results[t+1,]<-c(t,fits_same1,fits_same2,fits_dif1,fits_dif2,diagPsi_same1,diagPsi_same2,
                        diagPsi_dif1,diagPsi_dif2) 
@@ -317,3 +320,32 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
 # ylab("RMSEA for the model with no crossloadings")
 # 
 #  
+# 
+# 
+# #debug karyn example 5/18/2:
+# p = 9
+# fcor = -0.7
+# ML = 0.7
+# MR = 0
+# CL = 0.2
+# CR = 0
+# genLoadingss <- runif(p, min=ML-.5*MR, max=ML+.5*MR)
+# numCrossLoading <- runif(p*2, min=0.2 -.5*CR, max=0.2+.5*CR)
+# resultsAndOrder <- main.3f(p,fcor,genLoadingss,numCrossLoading)
+# k=3
+# l=genLoadingss
+# cld=numCrossLoading
+# # > eigen(Sigmastar_same1)$values
+# # [1]  3.1127901  2.8203419  0.6145145  0.5100000  0.5100000  0.5100000  0.5100000  0.5100000 -0.0976466
+# 
+# #testing fix with k =2: 
+# p = 10
+# fcor = -0.7
+# ML = 0.7
+# MR = 0
+# CL = 0.2
+# CR = 0
+# genLoadingss <- runif(p, min=ML-.5*MR, max=ML+.5*MR)
+# numCrossLoading <- runif(p*2, min=0.2 -.5*CR, max=0.2+.5*CR)
+# resultsAndOrder <- main.2f(p,fcor,genLoadingss,numCrossLoading)
+# 
