@@ -199,7 +199,7 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
    
    for (t in (1:length(row.same1))) {  #cycling through all (p-1)*k crossloadings to add
       
-      print(t)
+      #print(t)
       #add one cross-loading at a time, in all four orders
       Lsame1[row.same1[t],col.same1[t]] <- cld[t]
       Lsame2[row.same2[t],col.same2[t]] <- cld[t]
@@ -216,9 +216,7 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       Sigmastar_dif1<-Ldif1%*%Phi%*%t(Ldif1) 
       Sigmastar_dif2<-Ldif2%*%Phi%*%t(Ldif2)
       
-      #debug (delete later)
-      #if (t==15){save(Sigmastar_same1,Sigmastar_same2,file="debug.RData")}
-      
+     
       #residual variances (computing for all t)
       diagPsi_same1<-1-diag(Sigmastar_same1)
       diagPsi_same2<-1-diag(Sigmastar_same2)
@@ -231,6 +229,9 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       diag(Sigmastar_dif1)<-1
       diag(Sigmastar_dif2)<-1
       
+      #debug (delete later)
+      #if (t==6){save(Sigmastar_same1,Sigmastar_same2,Sigmastar_dif1,Sigmastar_dif2,file="debug.RData")}
+      
       # only run the model if all of the residual variances would be positive AND eigenvalues are all positive 
       
       if (sum(ifelse(diagPsi_same1<0,1,0)) > 0 | min(eigen(Sigmastar_same1)$values)<0) 
@@ -242,7 +243,7 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
       if (sum(ifelse(diagPsi_dif1<0,1,0)) > 0 | min(eigen(Sigmastar_dif1)$values)<0) 
         {fits_dif1<-rep(NA,4)} else {fits_dif1<-get.fits(Sigmastar_dif1,model)} 
       
-      if (sum(ifelse(diagPsi_dif2<0,1,0)) > 0 | min(eigen(Sigmastar_dif1)$values)<0) 
+      if (sum(ifelse(diagPsi_dif2<0,1,0)) > 0 | min(eigen(Sigmastar_dif2)$values)<0) 
         {fits_dif2<-rep(NA,4)} else {fits_dif2<-get.fits(Sigmastar_dif2,model)} 
       
       results[t+1,]<-c(t,fits_same1,fits_same2,fits_dif1,fits_dif2,diagPsi_same1,diagPsi_same2,
@@ -349,3 +350,20 @@ main.3f <- function(p=30,fcor=.1,l,cld){ #length of l must be p, length of cld m
 # numCrossLoading <- runif(p*2, min=0.2 -.5*CR, max=0.2+.5*CR)
 # resultsAndOrder <- main.2f(p,fcor,genLoadingss,numCrossLoading)
 # 
+
+
+# # #debug karyn example 5/22/2023:
+# #seed = 7965, p = 9, fcor = -0.65, ML = 0.7, MR = 0.1, CL = 0.2, CR = 0. 
+# p = 9
+# fcor = -0.65
+# ML = 0.7
+# MR = 0.1
+# CL = 0.2
+# CR = 0
+# set.seed(7965)
+# genLoadingss <- runif(p, min=ML-.5*MR, max=ML+.5*MR)
+# numCrossLoading <- runif(p*2, min=0.2 -.5*CR, max=0.2+.5*CR)
+# resultsAndOrder <- main.3f(p,fcor,genLoadingss,numCrossLoading)
+
+
+ 
