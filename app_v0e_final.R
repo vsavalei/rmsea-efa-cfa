@@ -107,7 +107,6 @@ ui <- fluidPage(
       p(textOutput("plottext")),
       plotlyOutput("plots"),
       br(),
-      #uiOutput("tabletext"),
       dataTableOutput("table"),
       dataTableOutput("table2"),
       conditionalPanel(
@@ -129,7 +128,6 @@ server <- function(input, output, session) {
   }, FALSE);
   
   #define input sliders for TWO factor model
-  #Vika change 2/40/2023: added min below (before was 0), changed max to not exceed 1
   output$slidemax_cross2 <- renderUI({
     sliderInput("aveloading_cross2", "Average Cross Loading (CL):", 
                 min = round((-sqrt(1-(input$aveloading2)^2+(input$fcor2*input$aveloading2)^2)-input$fcor2*input$aveloading2),2), 
@@ -144,8 +142,6 @@ server <- function(input, output, session) {
                 value = min(.1,input$aveloading2, (1-input$aveloading2)), round = -3, step = 0.01) 
   })
   
-  #vika 2/5/2023: In the min(1,2*input$aveloading_cross2,...), replace 1 with 2, 
-  #and the second term with its generalized version 
   output$sliderange_cross2 <- renderUI({
     sliderInput("range_cross2", "Cross-Loadings Range (CR):", 
                 min = 0, 
@@ -200,9 +196,11 @@ server <- function(input, output, session) {
     }
   })
   
+  
   # show warning message for potential negative variances
-  # ATTENTION: suppress warning messages in the end 
+  # ATTENTION: suppress warning messages in the end
   output$warningNegativeCL2  <- renderUI({
+    req(!is.null(input$aveloading_cross2))
     if( input$aveloading_cross2 < 0) {
       tagList(
         tags$p("Heads up: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
@@ -210,6 +208,7 @@ server <- function(input, output, session) {
     }
   })
   output$warningCRgreaterCL2 <- renderUI({
+    req(!is.null(input$range_cross2))
     if((input$range_cross2 > 2* input$aveloading_cross2) && (input$aveloading_cross2 >= 0 )) {
       tagList(
         tags$p("Heads up: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
@@ -217,6 +216,7 @@ server <- function(input, output, session) {
     }
   })
   output$warningNegativeCL3 <- renderUI({
+    req(!is.null(input$aveloading_cross3))
     if(input$aveloading_cross3 < 0) {
       tagList(
         tags$p("Heads up: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
@@ -224,12 +224,14 @@ server <- function(input, output, session) {
     }
   })
   output$warningCRgreaterCL3 <- renderUI({
+    req(!is.null(input$range_cross3))
     if((input$range_cross3 > 2* input$aveloading_cross3) && (input$aveloading_cross3 >= 0 )) {
       tagList(
         tags$p("Heads up: You’re allowing negative crossloadings! (CR > 2*CL)", style = "color: red;")
       )
     }
   })
+  
   
   observeEvent(input$updateButton,{      
     
@@ -278,13 +280,14 @@ server <- function(input, output, session) {
       set.seed(seed)
     }
     
-    genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch) 
     
-    # print(genLoadingss)
+    genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch) 
+    print("genLoadingss")
+    print(genLoadingss)
     
     numCrossLoading <- runif(numCrossLoadingSwitch, min=aveloading_crossSwitch -.5*range_crossSwitch, max=aveloading_crossSwitch+.5*range_crossSwitch)
-    
-    # print(numCrossLoading)
+    print("numCrossLoading")
+    print(numCrossLoading)
     
     # Allow switching the main function between two-factor model and three-factor model
     mainFunc <- switch(input$custom,
