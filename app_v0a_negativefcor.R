@@ -270,7 +270,11 @@ server <- function(input, output, session) {
     
     genLoadingss <- runif(pSwitch, min=aveloadingSwitch-.5*rangeSwitch, max=aveloadingSwitch+.5*rangeSwitch) 
     
+    # print(genLoadingss)
+    
     numCrossLoading <- runif(numCrossLoadingSwitch, min=aveloading_crossSwitch -.5*range_crossSwitch, max=aveloading_crossSwitch+.5*range_crossSwitch)
+    
+    # print(numCrossLoading)
     
     # Allow switching the main function between two-factor model and three-factor model
     mainFunc <- switch(input$custom,
@@ -281,7 +285,6 @@ server <- function(input, output, session) {
     
     resultsAndOrder <- mainFunc(isolate(pSwitch),isolate(fcorSwitch),genLoadingss,numCrossLoading)
     results <- as.data.frame(resultsAndOrder$results)
-    orders <- resultsAndOrder$orders
     
     remove_modal_spinner() # remove it when done
     
@@ -433,7 +436,7 @@ server <- function(input, output, session) {
                                                         "<br>SRMR: ", sprintf('%.3f', srmr_dif_f)))))+
           scale_color_manual(values = ColorblindnessFriendlyValues2, labels = c("Same", "Alt")) +   
           geom_abline(color="grey",slope=0, intercept=0.08) + 
-          labs(color = "Order") + theme(legend.position = c(0.8, 0.2))
+          labs(color = "Order") 
         
         p3 <- ggplotly(plot3,tooltip = c("text"))
         
@@ -619,7 +622,7 @@ server <- function(input, output, session) {
         ) %>%
           layout(annotations = layout_3_figs,
                  title = list(text= paste("Seed = ", seed, sep = ""),
-                              font = list(size = 12),
+                              font = list(size = 16),
                               xref= "container",
                               xanchor = 'left',
                               x = 0.01))
