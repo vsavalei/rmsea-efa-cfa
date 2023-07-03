@@ -203,7 +203,7 @@ server <- function(input, output, session) {
   # show warning message for potential negative variances
   # ATTENTION: suppress warning messages in the end 
   output$warningNegativeCL2  <- renderUI({
-  if( input$aveloading_cross2 < 0) {
+    if( input$aveloading_cross2 < 0) {
       tagList(
         tags$p("Heads up: You’re allowing negative crossloadings! (CL < 0)", style = "color: red;")
       )
@@ -232,10 +232,14 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$updateButton,{      
-      
+    
     pSwitch <- switch(input$custom,
                       twoFactor = input$p2,
                       threeFactor = input$p3)
+    
+    numParameterSwitch <- switch(input$custom,
+                                 twoFactor = paste0(input$p2, " (the number of variables)"),
+                                 threeFactor = paste0(input$p3*2, " (twice the number of variables)"))
     
     numCrossLoadingSwitch <- switch(input$custom,
                                     twoFactor = input$p2,
@@ -299,15 +303,14 @@ server <- function(input, output, session) {
     if (any(residuals < 0)){
       showNotification(paste("Negative Variance Warning"), duration = 5, type = "error")
     }
-
-    #define text
-    output$plottext <- renderText({ 
-      paste("In the plots below, the number of crossloadings in the true model is on the x-axis; this number 
-	          varies from 0 to ", isolate(pSwitch), " (the number of variables). The cross-loadings in the true 
-	          model are being added in different orders (see paper; for a 3-factor model, the explanation also appears at the bottom of this output.). Their exact values are shown in the tables below. (If some 
-	          values are missing from the plots, one of the residual variances is negative or the model 
-	          failed to converge). The fitted model is a ", numText ," with no cross-loadings. 
-	          You can hover over the curve to get specific fit index values.", sep="") 
+    
+    output$plottext <- renderText({
+      paste("In the plots below, the number of crossloadings in the true model is on the x-axis; this number
+    	          varies from 0 to ", isolate(numParameterSwitch), ". The cross-loadings in the true
+    	          model are being added in different orders (see paper; for a 3-factor model, the explanation also appears at the bottom of this output.). Their exact values are shown in the tables below. (If some
+    	          values are missing from the plots, one of the residual variances is negative or the model
+    	          failed to converge). The fitted model is a ", numText ," with no cross-loadings.
+    	          You can hover over the curve to get specific fit index values.", sep="")
     })
     
     if (input$custom =="twoFactor"){
@@ -337,7 +340,7 @@ server <- function(input, output, session) {
       
       row.names(table2f1) <- c("Main loadings","Cross loadings","Residual variances")
       row.names(table2f2) <- c("Main loadings","Cross loadings","Residual variances")
-
+      
       # Render the first data table 
       output$table <- renderDataTable(
         datatable(
